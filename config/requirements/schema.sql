@@ -20,6 +20,19 @@ CREATE TABLE Schemes (
     Status ENUM('Active', 'Inactive') DEFAULT 'Active',
     CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+CREATE TABLE Installments (
+    InstallmentID INT AUTO_INCREMENT PRIMARY KEY,
+    SchemeID INT NOT NULL,
+    InstallmentNumber INT NOT NULL,
+    Amount DECIMAL(10,2) NOT NULL,
+    DrawDate DATE NOT NULL,
+    Benefits TEXT,
+    ImageURL VARCHAR(255), 
+    Status ENUM('Active', 'Inactive') DEFAULT 'Active',
+    CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (SchemeID) REFERENCES Schemes(SchemeID) ON DELETE CASCADE
+);
+
 
 -- 3. Promoters Table (Parent Table)
 CREATE TABLE Promoters (
@@ -37,11 +50,13 @@ CREATE TABLE Promoters (
     IFSCCode VARCHAR(20),
     BankName VARCHAR(255),
     PaymentCodeCounter INT DEFAULT 0,
-    TotalEarnings DECIMAL(10,2) DEFAULT 0.00,
+    ParentPromoterID  INT DEFAULT NULL,
     Status ENUM('Active', 'Inactive') DEFAULT 'Active',
     CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UpdatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    UpdatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (SubPromoterID) REFERENCES Promoters(PromoterID) ON DELETE SET NULL
 );
+
 
 -- 4. Customers Table (Child of Promoters)
 CREATE TABLE Customers (
@@ -58,15 +73,11 @@ CREATE TABLE Customers (
     IFSCCode VARCHAR(20),
     BankName VARCHAR(255),
     PromoterID INT,
-    SchemeID INT,
-    PaymentCodes INT DEFAULT 0,
-    TotalAmountPaid DECIMAL(10,2) DEFAULT 0.00,
-    LastPaymentDate DATETIME DEFAULT NULL,
+    ReferredBy  VARCHAR(50), 
     Status ENUM('Active', 'Inactive', 'Suspended') DEFAULT 'Active',
     CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UpdatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (PromoterID) REFERENCES Promoters(PromoterID) ON DELETE SET NULL,
-    FOREIGN KEY (SchemeID) REFERENCES Schemes(SchemeID) ON DELETE SET NULL
 );
 
 -- 5. Payments Table (Child of Customers and Promoters)
@@ -159,4 +170,36 @@ CREATE TABLE PaymentQR (
     BankAddress TEXT NOT NULL,
     CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (CustomerID) REFERENCES Customers(CustomerID) ON DELETE CASCADE
+);
+
+
+CREATE TABLE Withdrawals (
+    WithdrawalID INT AUTO_INCREMENT PRIMARY KEY,
+    UserID INT NOT NULL,
+    UserType ENUM('Customer', 'Promoter') NOT NULL,
+    Amount DECIMAL(10,2) NOT NULL,
+    Status ENUM('Pending', 'Approved', 'Rejected') DEFAULT 'Pending',
+    RequestedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    ProcessedAt TIMESTAMP NULL,
+    AdminID INT DEFAULT NULL,
+    Remarks TEXT,
+);
+
+CREATE TABLE Winners (
+    WinnerID INT AUTO_INCREMENT PRIMARY KEY,
+    UserID INT NOT NULL,
+    UserType ENUM('Customer', 'Promoter') NOT NULL,
+    PrizeType ENUM('Surprise Prize', 'Bumper Prize', 'Gift Hamper', 'Education Scholarship', 'Other') NOT NULL,
+    WinningDate TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    Status ENUM('Pending', 'Claimed', 'Expired') DEFAULT 'Pending',
+    AdminID INT DEFAULT NULL,
+    Remarks TEXT,
+    FOREIGN KEY (AdminID) REFERENCES Admins(AdminID) ON DELETE SET NULL
+);
+
+CREATE TABLE Teams (
+    TeamID INT AUTO_INCREMENT PRIMARY KEY,
+    TeamUniqueID VARCHAR(50) UNIQUE NOT NULL,
+    TeamName VARCHAR(255) UNIQUE NOT NULL,
+    CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
