@@ -53,8 +53,7 @@ CREATE TABLE Promoters (
     ParentPromoterID  INT DEFAULT NULL,
     Status ENUM('Active', 'Inactive') DEFAULT 'Active',
     CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UpdatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (SubPromoterID) REFERENCES Promoters(PromoterID) ON DELETE SET NULL
+    UpdatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
 
@@ -77,7 +76,7 @@ CREATE TABLE Customers (
     Status ENUM('Active', 'Inactive', 'Suspended') DEFAULT 'Active',
     CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UpdatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (PromoterID) REFERENCES Promoters(PromoterID) ON DELETE SET NULL,
+    FOREIGN KEY (PromoterID) REFERENCES Promoters(PromoterID) ON DELETE SET NULL
 );
 
 -- 5. Payments Table (Child of Customers and Promoters)
@@ -182,7 +181,7 @@ CREATE TABLE Withdrawals (
     RequestedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     ProcessedAt TIMESTAMP NULL,
     AdminID INT DEFAULT NULL,
-    Remarks TEXT,
+    Remarks TEXT
 );
 
 CREATE TABLE Winners (
