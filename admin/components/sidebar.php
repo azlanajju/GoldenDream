@@ -245,7 +245,7 @@
 
     <ul class="sidebar-menu">
         <li class="<?php echo ( $currentPage == 'dashboard') ? 'active' : ''; ?>" >
-            <a href="<?php echo $menuPath; ?>dashboard.php" data-title="Dashboard">
+            <a href="<?php echo $menuPath; ?>dashboard" data-title="Dashboard">
                 <i class="fas fa-tachometer-alt"></i>
                 <span class="link-text">Dashboard</span>
             </a>
@@ -254,7 +254,7 @@
         <div class="section-divider"><span>User Management</span></div>
 
         <li class="<?php echo ( $currentPage == 'admins') ? 'active' : ''; ?>">
-            <a href="<?php echo $menuPath; ?>admins.php" data-title="Admins">
+            <a href="<?php echo $menuPath; ?>admins" data-title="Admins">
                 <i class="fas fa-user-shield"></i>
                 <span class="link-text">Admins</span>
             </a>
