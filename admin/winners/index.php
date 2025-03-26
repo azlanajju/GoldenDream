@@ -492,12 +492,12 @@ include("../components/topbar.php");
             transition: all 0.3s ease;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         }
-        
+
         .add-winner-btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
         }
-        
+
         /* Styles for the modal */
         .modal {
             display: none;
@@ -511,7 +511,7 @@ include("../components/topbar.php");
             justify-content: center;
             align-items: center;
         }
-        
+
         .modal-content {
             background: white;
             padding: 30px;
@@ -521,7 +521,7 @@ include("../components/topbar.php");
             position: relative;
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
         }
-        
+
         .close-modal {
             position: absolute;
             top: 15px;
@@ -531,23 +531,23 @@ include("../components/topbar.php");
             color: #7f8c8d;
             transition: color 0.3s ease;
         }
-        
+
         .close-modal:hover {
             color: #e74c3c;
         }
-        
+
         /* Form styles */
         .form-group {
             margin-bottom: 20px;
         }
-        
+
         .form-group label {
             display: block;
             margin-bottom: 8px;
             font-weight: 500;
             color: #2c3e50;
         }
-        
+
         .form-control {
             width: 100%;
             padding: 12px;
@@ -556,13 +556,13 @@ include("../components/topbar.php");
             font-size: 14px;
             transition: all 0.3s ease;
         }
-        
+
         .form-control:focus {
             border-color: #3498db;
             box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
             outline: none;
         }
-        
+
         /* Error message styles */
         .error-message {
             background-color: rgba(231, 76, 60, 0.1);
@@ -576,18 +576,18 @@ include("../components/topbar.php");
             align-items: center;
             gap: 8px;
         }
-        
+
         /* Status badges */
         .status-pending {
             background-color: rgba(243, 156, 18, 0.1);
             color: #f39c12;
         }
-        
+
         .status-claimed {
             background-color: rgba(46, 204, 113, 0.1);
             color: #2ecc71;
         }
-        
+
         .status-expired {
             background-color: rgba(231, 76, 60, 0.1);
             color: #e74c3c;
@@ -901,24 +901,24 @@ include("../components/topbar.php");
         function showAddWinnerModal() {
             const modal = document.getElementById('addWinnerModal');
             const form = modal.querySelector('form');
-            
+
             // Reset form fields
             form.reset();
             document.querySelector('input[name="user_id"]').value = '';
             document.getElementById('customerSelect').style.display = 'none';
             document.getElementById('promoterSelect').style.display = 'none';
-            
+
             // Reset any error styling
             form.querySelectorAll('.form-control').forEach(el => {
                 el.style.borderColor = '';
             });
-            
+
             // Remove any error messages
             const existingError = form.querySelector('.error-message');
             if (existingError) {
                 existingError.remove();
             }
-            
+
             // Display the modal with animation
             modal.style.display = 'flex';
             setTimeout(() => {
@@ -926,12 +926,12 @@ include("../components/topbar.php");
                 modal.querySelector('.modal-content').style.transform = 'translateY(0)';
             }, 10);
         }
-        
+
         function hideAddWinnerModal() {
             const modal = document.getElementById('addWinnerModal');
             modal.style.display = 'none';
         }
-        
+
         // Toggle user select based on user type
         function toggleUserSelect(userType) {
             const customerSelect = document.getElementById('customerSelect');
@@ -972,26 +972,26 @@ include("../components/topbar.php");
         // Make sure the form event listener is specific to the Add Winner form
         document.addEventListener('DOMContentLoaded', function() {
             const addWinnerForm = document.querySelector('#addWinnerModal form');
-            
+
             addWinnerForm.addEventListener('submit', function(e) {
                 // Reset any previous error styling
                 this.querySelectorAll('.form-control').forEach(el => {
                     el.style.borderColor = '';
                 });
-                
+
                 // Remove any previous error messages
                 const existingError = this.querySelector('.error-message');
                 if (existingError) {
                     existingError.remove();
                 }
-                
+
                 const userType = this.querySelector('select[name="user_type"]').value;
                 const userId = this.querySelector('input[name="user_id"]').value;
                 const prizeType = this.querySelector('select[name="prize_type"]').value;
-                
+
                 let hasError = false;
                 let errorMessage = '';
-                
+
                 if (!userType) {
                     this.querySelector('select[name="user_type"]').style.borderColor = '#e74c3c';
                     errorMessage = 'Please select a user type';
@@ -1010,24 +1010,24 @@ include("../components/topbar.php");
                     errorMessage = 'Please select a prize type';
                     hasError = true;
                 }
-                
+
                 if (hasError) {
                     e.preventDefault();
-                    
+
                     // Show error message
                     const errorDiv = document.createElement('div');
                     errorDiv.className = 'error-message';
                     errorDiv.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${errorMessage}`;
-                    
+
                     this.insertBefore(errorDiv, this.firstChild);
                     return false;
                 }
-                
+
                 // Show loading state on button
                 const submitBtn = this.querySelector('button[type="submit"]');
                 submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
                 submitBtn.disabled = true;
-                
+
                 return true;
             });
         });
