@@ -23,6 +23,7 @@ CREATE TABLE Schemes (
 CREATE TABLE Installments (
     InstallmentID INT AUTO_INCREMENT PRIMARY KEY,
     SchemeID INT NOT NULL,
+    InstallmentName VARCHAR(100), 
     InstallmentNumber INT NOT NULL,
     Amount DECIMAL(10,2) NOT NULL,
     DrawDate DATE NOT NULL,

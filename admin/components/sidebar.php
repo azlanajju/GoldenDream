@@ -259,14 +259,14 @@
                 <span class="link-text">Admins</span>
             </a>
         </li>
-        <li class="<?php echo ( $currentPage == 'Promoters') ? 'active' : ''; ?>">
-            <a href="<?php echo $menuPath; ?>promoters.php" data-title="Promoters">
+        <li class="<?php echo ( $currentPage == 'promoters') ? 'active' : ''; ?>">
+            <a href="<?php echo $menuPath; ?>promoter" data-title="Promoters">
                 <i class="fas fa-users"></i>
                 <span class="link-text">Promoters</span>
             </a>
         </li>
-        <li class="<?php echo ( $currentPage == 'Customers') ? 'active' : ''; ?>">
-            <a href="<?php echo $menuPath; ?>customers.php" data-title="Customers">
+        <li class="<?php echo ( $currentPage == 'customers') ? 'active' : ''; ?>">
+            <a href="<?php echo $menuPath; ?>customers" data-title="Customers">
                 <i class="fas fa-user-friends"></i>
                 <span class="link-text">Customers</span>
             </a>
@@ -275,13 +275,13 @@
         <div class="section-divider"><span>Scheme Management</span></div>
 
         <li class="<?php echo ( $currentPage == 'Schemes') ? 'active' : ''; ?>">
-            <a href="<?php echo $menuPath; ?>schemes.php" data-title="Schemes">
+            <a href="<?php echo $menuPath; ?>schemes" data-title="Schemes">
                 <i class="fas fa-project-diagram"></i>
                 <span class="link-text">Schemes</span>
             </a>
         </li>
         <li class="<?php echo ( $currentPage == 'Subscriptions') ? 'active' : ''; ?>">
-            <a href="<?php echo $menuPath; ?>subscriptions.php" data-title="Subscriptions">
+            <a href="<?php echo $menuPath; ?>subscriptions" data-title="Subscriptions">
                 <i class="fas fa-calendar-check"></i>
                 <span class="link-text">Subscriptions</span>
             </a>
@@ -290,7 +290,7 @@
         <div class="section-divider"><span>Finance</span></div>
 
         <li class="<?php echo ( $currentPage == 'Payments') ? 'active' : ''; ?>">
-            <a href="<?php echo $menuPath; ?>payments.php" data-title="Payments">
+            <a href="<?php echo $menuPath; ?>payments" data-title="Payments">
                 <i class="fas fa-credit-card"></i>
                 <span class="link-text">Payments</span>
             </a>
