@@ -274,13 +274,13 @@
 
         <div class="section-divider"><span>Scheme Management</span></div>
 
-        <li class="<?php echo ( $currentPage == 'Schemes') ? 'active' : ''; ?>">
+        <li class="<?php echo ( $currentPage == 'schemes') ? 'active' : ''; ?>">
             <a href="<?php echo $menuPath; ?>schemes" data-title="Schemes">
                 <i class="fas fa-project-diagram"></i>
                 <span class="link-text">Schemes</span>
             </a>
         </li>
-        <li class="<?php echo ( $currentPage == 'Subscriptions') ? 'active' : ''; ?>">
+        <li class="<?php echo ( $currentPage == 'subscriptions') ? 'active' : ''; ?>">
             <a href="<?php echo $menuPath; ?>subscriptions" data-title="Subscriptions">
                 <i class="fas fa-calendar-check"></i>
                 <span class="link-text">Subscriptions</span>
@@ -289,20 +289,20 @@
 
         <div class="section-divider"><span>Finance</span></div>
 
-        <li class="<?php echo ( $currentPage == 'Payments') ? 'active' : ''; ?>">
+        <li class="<?php echo ( $currentPage == 'payments') ? 'active' : ''; ?>">
             <a href="<?php echo $menuPath; ?>payments" data-title="Payments">
                 <i class="fas fa-credit-card"></i>
                 <span class="link-text">Payments</span>
             </a>
         </li>
-        <li class="<?php echo ( $currentPage == 'index') ? 'Withdrawals' : ''; ?>">
-            <a href="<?php echo $menuPath; ?>withdrawals.php" data-title="Withdrawals">
+        <li class="<?php echo ( $currentPage == 'withdrawals') ? 'active' : ''; ?>">
+            <a href="<?php echo $menuPath; ?>withdrawals" data-title="Withdrawals">
                 <i class="fas fa-hand-holding-usd"></i>
                 <span class="link-text">Withdrawals</span>
             </a>
         </li>
-        <li class="<?php echo ( $currentPage == 'Winners') ? 'active' : ''; ?>">
-            <a href="<?php echo $menuPath; ?>winners.php" data-title="Winners">
+        <li class="<?php echo ( $currentPage == 'winners') ? 'active' : ''; ?>">
+            <a href="<?php echo $menuPath; ?>winners" data-title="Winners">
                 <i class="fas fa-trophy"></i>
                 <span class="link-text">Winners</span>
             </a>
@@ -310,21 +310,21 @@
 
         <div class="section-divider"><span>System</span></div>
 
-        <li class="<?php echo ( $currentPage == 'Notifications') ? 'active' : ''; ?>">
-            <a href="<?php echo $menuPath; ?>notifications.php" data-title="Notifications">
+        <li class="<?php echo ( $currentPage == 'notifications') ? 'active' : ''; ?>">
+            <a href="<?php echo $menuPath; ?>notifications" data-title="Notifications">
                 <i class="fas fa-bell"></i>
                 <span class="link-text">Notifications</span>
                 <span class="badge">5</span>
             </a>
         </li>
-        <li class="<?php echo ( $currentPage == 'Activity') ? 'active' : ''; ?>">
-            <a href="<?php echo $menuPath; ?>activity-logs.php" data-title="Activity Logs">
+        <li class="<?php echo ( $currentPage == 'activity') ? 'active' : ''; ?>">
+            <a href="<?php echo $menuPath; ?>activity-logs" data-title="Activity Logs">
                 <i class="fas fa-history"></i>
                 <span class="link-text">Activity Logs</span>
             </a>
         </li>
-        <li class="<?php echo ( $currentPage == 'Settings') ? 'active' : ''; ?>">
-            <a href="<?php echo $menuPath; ?>settings.php" data-title="Settings">
+        <li class="<?php echo ( $currentPage == 'settings') ? 'active' : ''; ?>">
+            <a href="<?php echo $menuPath; ?>settings" data-title="Settings">
                 <i class="fas fa-cog"></i>
                 <span class="link-text">Settings</span>
             </a>

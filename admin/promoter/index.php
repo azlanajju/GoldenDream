@@ -183,225 +183,628 @@ include("../components/topbar.php");
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../assets/css/admin.css">
     <style>
-        /* Page-specific styles */
+        /* Promoter Management Styles with pr_ prefix variables */
+        :root {
+            --pr_primary: #3a7bd5;
+            --pr_primary-hover: #2c60a9;
+            --pr_secondary: #00d2ff;
+            --pr_success: #2ecc71;
+            --pr_success-hover: #27ae60;
+            --pr_warning: #f39c12;
+            --pr_warning-hover: #d35400;
+            --pr_danger: #e74c3c;
+            --pr_danger-hover: #c0392b;
+            --pr_info: #3498db;
+            --pr_info-hover: #2980b9;
+            --pr_text-dark: #2c3e50;
+            --pr_text-medium: #34495e;
+            --pr_text-light: #7f8c8d;
+            --pr_bg-light: #f8f9fa;
+            --pr_border-color: #e0e0e0;
+            --pr_shadow-sm: 0 2px 5px rgba(0, 0, 0, 0.05);
+            --pr_shadow-md: 0 4px 10px rgba(0, 0, 0, 0.08);
+            --pr_transition: 0.25s;
+        }
+
+        .content-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: var(--pr_shadow-sm);
+            overflow: hidden;
+            margin-bottom: 30px;
+        }
+
+        .card-header {
+            padding: 20px 25px;
+            border-bottom: 1px solid var(--pr_border-color);
+            background-color: white;
+        }
+
+        .card-header h2 {
+            margin: 0 0 15px 0;
+            font-size: 18px;
+            color: var(--pr_text-dark);
+            font-weight: 600;
+        }
+
+        .card-body {
+            padding: 0;
+        }
+
+        /* Promoter Table Styles */
+        .promoter-table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+
+        .promoter-table th,
+        .promoter-table td {
+            padding: 16px 20px;
+            text-align: left;
+            border-bottom: 1px solid var(--pr_border-color);
+            font-size: 14px;
+            vertical-align: middle;
+        }
+
+        .promoter-table th {
+            background-color: var(--pr_bg-light);
+            color: var(--pr_text-medium);
+            font-weight: 600;
+            position: relative;
+            cursor: pointer;
+            transition: background-color var(--pr_transition);
+            white-space: nowrap;
+        }
+
+        .promoter-table th:hover {
+            background-color: #edf2f7;
+        }
+
+        .promoter-table th::after {
+            content: '↕';
+            position: absolute;
+            right: 15px;
+            color: #cbd5e0;
+            font-size: 14px;
+        }
+
+        .promoter-table th.asc::after {
+            content: '↑';
+            color: var(--pr_primary);
+        }
+
+        .promoter-table th.desc::after {
+            content: '↓';
+            color: var(--pr_primary);
+        }
+
+        .promoter-table tbody tr {
+            transition: background-color var(--pr_transition);
+        }
+
+        .promoter-table tbody tr:hover {
+            background-color: rgba(58, 123, 213, 0.03);
+        }
+
+        .promoter-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Column widths for better alignment */
+        .promoter-table th:nth-child(1),
+        .promoter-table td:nth-child(1) {
+            width: 10%;
+        }
+
+        .promoter-table th:nth-child(2),
+        .promoter-table td:nth-child(2) {
+            width: 15%;
+        }
+
+        .promoter-table th:nth-child(3),
+        .promoter-table td:nth-child(3) {
+            width: 12%;
+        }
+
+        .promoter-table th:nth-child(4),
+        .promoter-table td:nth-child(4) {
+            width: 14%;
+        }
+
+        .promoter-table th:nth-child(5),
+        .promoter-table td:nth-child(5) {
+            width: 8%;
+        }
+
+        .promoter-table th:nth-child(6),
+        .promoter-table td:nth-child(6) {
+            width: 8%;
+        }
+
+        .promoter-table th:nth-child(7),
+        .promoter-table td:nth-child(7) {
+            width: 8%;
+        }
+
+        .promoter-table th:nth-child(8),
+        .promoter-table td:nth-child(8) {
+            width: 10%;
+        }
+
+        .promoter-table th:nth-child(9),
+        .promoter-table td:nth-child(9) {
+            width: 15%;
+        }
+
+        /* Status Badge Styles */
+        .status-badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            text-align: center;
+            min-width: 80px;
+        }
+
+        .status-active {
+            background-color: rgba(46, 204, 113, 0.1);
+            color: var(--pr_success);
+            border: 1px solid rgba(46, 204, 113, 0.2);
+        }
+
+        .status-inactive {
+            background-color: rgba(231, 76, 60, 0.1);
+            color: var(--pr_danger);
+            border: 1px solid rgba(231, 76, 60, 0.2);
+        }
+
+        /* Promoter Actions Styles */
         .promoter-actions {
             display: flex;
             gap: 8px;
+            justify-content: center;
         }
 
         .promoter-actions a {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            width: 32px;
-            height: 32px;
-            border-radius: 6px;
+            width: 34px;
+            height: 34px;
+            border-radius: 8px;
             color: white;
-            transition: all 0.3s ease;
+            transition: all var(--pr_transition);
         }
 
         .promoter-actions .view-btn {
-            background: #3498db;
+            background: var(--pr_info);
         }
 
         .promoter-actions .view-btn:hover {
-            background: #2980b9;
+            background: var(--pr_info-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 3px 5px rgba(41, 128, 185, 0.2);
         }
 
         .promoter-actions .edit-btn {
-            background: #3a7bd5;
+            background: var(--pr_primary);
         }
 
         .promoter-actions .edit-btn:hover {
-            background: #2c60a9;
+            background: var(--pr_primary-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 3px 5px rgba(44, 96, 169, 0.2);
         }
 
         .promoter-actions .delete-btn {
-            background: #e74c3c;
+            background: var(--pr_danger);
         }
 
         .promoter-actions .delete-btn:hover {
-            background: #c0392b;
+            background: var(--pr_danger-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 3px 5px rgba(192, 57, 43, 0.2);
         }
 
         .promoter-actions .activate-btn {
-            background: #2ecc71;
+            background: var(--pr_success);
         }
 
         .promoter-actions .activate-btn:hover {
-            background: #27ae60;
+            background: var(--pr_success-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 3px 5px rgba(39, 174, 96, 0.2);
         }
 
         .promoter-actions .deactivate-btn {
-            background: #f39c12;
+            background: var(--pr_warning);
         }
 
         .promoter-actions .deactivate-btn:hover {
-            background: #d35400;
-        }
-
-        .status-badge {
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: 500;
-            text-align: center;
-            display: inline-block;
-            min-width: 80px;
-        }
-
-        .status-active {
-            background-color: rgba(46, 204, 113, 0.1);
-            color: #2ecc71;
-        }
-
-        .status-inactive {
-            background-color: rgba(231, 76, 60, 0.1);
-            color: #e74c3c;
-        }
-
-        .add-promoter-btn {
-            background: linear-gradient(135deg, #3a7bd5, #00d2ff);
-            color: white;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 6px;
-            font-weight: 500;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.3s ease;
-            text-decoration: none;
-        }
-
-        .add-promoter-btn:hover {
+            background: var(--pr_warning-hover);
             transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 3px 5px rgba(211, 84, 0, 0.2);
         }
 
-        .filter-container {
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
-            margin-bottom: 20px;
-        }
-
-        .filter-group {
-            display: flex;
-            align-items: center;
-        }
-
-        .filter-group label {
-            margin-right: 8px;
-            font-weight: 500;
-            font-size: 14px;
-            color: #555;
-        }
-
-        .filter-select {
-            padding: 8px 12px;
-            border: 1px solid #e0e0e0;
-            border-radius: 6px;
-            font-size: 14px;
-            min-width: 150px;
-        }
-
-        .filter-select:focus {
-            border-color: #3a7bd5;
-            outline: none;
-        }
-
+        /* Customer Count Badge */
         .customer-count {
-            background: #f1c40f;
-            color: #2c3e50;
-            padding: 3px 8px;
-            border-radius: 12px;
+            background: linear-gradient(135deg, #f1c40f, #f39c12);
+            color: #fff;
+            padding: 5px 10px;
+            border-radius: 20px;
             font-size: 12px;
             font-weight: 600;
+            display: inline-block;
+            min-width: 30px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(243, 156, 18, 0.2);
         }
 
+        /* Parent Promoter Style */
+        .parent-promoter {
+            color: var(--pr_text-light);
+            font-size: 12px;
+            display: block;
+            margin-top: 5px;
+            line-height: 1.4;
+        }
+
+        .parent-promoter i {
+            color: var(--pr_primary);
+            margin-right: 5px;
+        }
+
+        /* Payment Code Counter */
+        .payment-code-counter {
+            font-weight: 600;
+            color: var(--pr_primary);
+            position: relative;
+            display: inline-block;
+            padding: 4px 8px;
+            background-color: rgba(58, 123, 213, 0.08);
+            border-radius: 6px;
+            text-align: center;
+        }
+
+        /* Search Box Styles */
         .promoter-search-box {
-            margin-bottom: 20px;
+            margin-bottom: 0;
             display: flex;
             gap: 10px;
         }
 
         .promoter-search-box input {
             flex: 1;
-            padding: 10px 15px;
-            border: 1px solid #e0e0e0;
-            border-radius: 6px;
+            padding: 12px 15px;
+            border: 1px solid var(--pr_border-color);
+            border-radius: 8px;
             font-size: 14px;
+            transition: all var(--pr_transition);
+        }
+
+        .promoter-search-box input:focus {
+            border-color: var(--pr_primary);
+            box-shadow: 0 0 0 3px rgba(58, 123, 213, 0.1);
+            outline: none;
         }
 
         .promoter-search-box button {
-            background: #3a7bd5;
+            background: var(--pr_primary);
             color: white;
             border: none;
-            padding: 0 15px;
-            border-radius: 6px;
+            padding: 0 20px;
+            border-radius: 8px;
             cursor: pointer;
+            transition: all var(--pr_transition);
         }
 
         .promoter-search-box button:hover {
-            background: #2c60a9;
+            background: var(--pr_primary-hover);
         }
 
-        .payment-code-counter {
-            font-weight: 600;
-            color: #3a7bd5;
+        /* Add Promoter Button */
+        .add-promoter-btn {
+            background: linear-gradient(135deg, var(--pr_primary), var(--pr_secondary));
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all var(--pr_transition);
+            text-decoration: none;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
 
-        .parent-promoter {
-            color: #7f8c8d;
-            font-size: 12px;
-            display: block;
-            margin-top: 3px;
+        .add-promoter-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
         }
 
-        /* Responsive tables */
-        @media (max-width: 992px) {
-            .responsive-table {
-                overflow-x: auto;
-            }
-
-            .promoter-table {
-                min-width: 800px;
-            }
+        /* Filter Container */
+        .filter-container {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+            padding: 20px;
+            background-color: var(--pr_bg-light);
+            border-radius: 8px;
         }
 
-        /* Filter button */
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .filter-group label {
+            font-weight: 500;
+            font-size: 14px;
+            color: var(--pr_text-medium);
+        }
+
+        .filter-select {
+            padding: 10px 15px;
+            border: 1px solid var(--pr_border-color);
+            border-radius: 6px;
+            font-size: 14px;
+            min-width: 170px;
+            background-color: #fff;
+            transition: all var(--pr_transition);
+        }
+
+        .filter-select:focus {
+            border-color: var(--pr_primary);
+            box-shadow: 0 0 0 3px rgba(58, 123, 213, 0.1);
+            outline: none;
+        }
+
+        /* Filter Buttons */
         .filter-btn {
-            padding: 8px 15px;
-            background: #f5f7fa;
-            border: 1px solid #e0e0e0;
+            padding: 10px 15px;
+            background: var(--pr_primary);
+            color: white;
+            border: none;
             border-radius: 6px;
             font-size: 14px;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all var(--pr_transition);
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
 
         .filter-btn:hover {
-            background: #e0e0e0;
+            background: var(--pr_primary-hover);
+            transform: translateY(-1px);
         }
 
         .reset-btn {
-            padding: 8px 15px;
-            background: #f8f9fa;
-            border: 1px solid #e0e0e0;
+            padding: 10px 15px;
+            background: #fff;
+            border: 1px solid var(--pr_danger);
             border-radius: 6px;
             font-size: 14px;
-            color: #e74c3c;
+            color: var(--pr_danger);
             cursor: pointer;
-            transition: all 0.3s ease;
-            display: inline-flex;
+            transition: all var(--pr_transition);
+            display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 6px;
+            text-decoration: none;
         }
 
         .reset-btn:hover {
-            background: #fee;
+            background: rgba(231, 76, 60, 0.05);
+            color: var(--pr_danger-hover);
+        }
+
+        /* Pagination Styles */
+        .pagination {
+            display: flex;
+            list-style: none;
+            padding: 0;
+            margin: 25px 0;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .pagination li {
+            margin: 0;
+        }
+
+        .pagination a,
+        .pagination span {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 36px;
+            height: 36px;
+            padding: 0 8px;
+            border-radius: 6px;
+            text-decoration: none;
+            color: var(--pr_text-medium);
+            background: white;
+            border: 1px solid var(--pr_border-color);
+            transition: all var(--pr_transition);
+            font-size: 14px;
+        }
+
+        .pagination a:hover {
+            background: var(--pr_bg-light);
+            border-color: var(--pr_primary);
+            color: var(--pr_primary);
+        }
+
+        .pagination .active a {
+            background: var(--pr_primary);
+            color: white;
+            border-color: var(--pr_primary);
+            box-shadow: 0 2px 5px rgba(58, 123, 213, 0.3);
+        }
+
+        /* No Data State */
+        .no-data {
+            padding: 50px 20px;
+            text-align: center;
+            color: var(--pr_text-light);
+        }
+
+        .no-data p {
+            margin-bottom: 20px;
+            font-size: 16px;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            transition: all var(--pr_transition);
+            font-weight: 500;
+        }
+
+        .btn-primary {
+            background: var(--pr_primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--pr_primary-hover);
+            transform: translateY(-2px);
+        }
+
+        /* Alert Messages */
+        .alert {
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            transition: opacity 0.5s ease;
+        }
+
+        .alert-success {
+            background-color: rgba(46, 204, 113, 0.1);
+            border-left: 4px solid var(--pr_success);
+            color: #2d6a4f;
+        }
+
+        .alert-danger {
+            background-color: rgba(231, 76, 60, 0.1);
+            border-left: 4px solid var(--pr_danger);
+            color: #ae1e2f;
+        }
+
+        /* Responsive table container */
+        .responsive-table {
+            overflow-x: auto;
+            border-radius: 8px;
+            box-shadow: var(--pr_shadow-sm);
+        }
+
+        /* Responsive Styles */
+        @media (max-width: 1200px) {
+
+            .promoter-table th:nth-child(4),
+            .promoter-table td:nth-child(4),
+            .promoter-table th:nth-child(8),
+            .promoter-table td:nth-child(8) {
+                display: none;
+            }
+
+            .promoter-table th:nth-child(1),
+            .promoter-table td:nth-child(1) {
+                width: 12%;
+            }
+
+            .promoter-table th:nth-child(2),
+            .promoter-table td:nth-child(2) {
+                width: 20%;
+            }
+
+            .promoter-table th:nth-child(3),
+            .promoter-table td:nth-child(3) {
+                width: 15%;
+            }
+
+            .promoter-table th:nth-child(5),
+            .promoter-table td:nth-child(5) {
+                width: 10%;
+            }
+
+            .promoter-table th:nth-child(6),
+            .promoter-table td:nth-child(6) {
+                width: 10%;
+            }
+
+            .promoter-table th:nth-child(7),
+            .promoter-table td:nth-child(7) {
+                width: 10%;
+            }
+
+            .promoter-table th:nth-child(9),
+            .promoter-table td:nth-child(9) {
+                width: 18%;
+            }
+        }
+
+        @media (max-width: 992px) {
+            .filter-container {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+            }
+
+            .filter-group {
+                width: 100%;
+            }
+
+            .filter-select {
+                flex-grow: 1;
+            }
+
+            .filter-btn,
+            .reset-btn {
+                align-self: flex-start;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .page-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+
+            .add-promoter-btn {
+                align-self: flex-start;
+            }
+
+            .promoter-search-box {
+                flex-direction: column;
+            }
+
+            .promoter-search-box button {
+                align-self: flex-end;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .promoter-actions a {
+                width: 30px;
+                height: 30px;
+            }
+
+            .pagination a,
+            .pagination span {
+                min-width: 32px;
+                height: 32px;
+            }
         }
     </style>
 </head>
@@ -443,6 +846,7 @@ include("../components/topbar.php");
             </div>
 
             <div class="card-body">
+                <!-- Replace the existing filter-container section with this improved version -->
                 <form action="" method="GET" class="filter-container">
                     <div class="filter-group">
                         <label for="status_filter">Status:</label>
@@ -472,92 +876,92 @@ include("../components/topbar.php");
 
                     <?php if (!empty($search) || !empty($status) || !empty($parentId)): ?>
                         <a href="index.php" class="reset-btn">
-                            <i class="fas fa-times"></i> Reset
+                            <i class="fas fa-times"></i> Reset Filters
                         </a>
                     <?php endif; ?>
                 </form>
 
                 <?php if (count($promoters) > 0): ?>
                     <div class="responsive-table">
-                        <table class="promoter-table">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Name</th>
-                                    <th>Contact</th>
-                                    <th>Email</th>
-                                    <th>Status</th>
-                                    <th>Payment Codes</th>
-                                    <th>Customers</th>
-                                    <th>Created</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($promoters as $promoter): ?>
-                                    <tr>
-                                        <td><?php echo $promoter['PromoterUniqueID']; ?></td>
-                                        <td>
-                                            <?php echo htmlspecialchars($promoter['Name']); ?>
-                                            <?php if (!empty($promoter['ParentName'])): ?>
-                                                <span class="parent-promoter">
-                                                    <i class="fas fa-user-friends"></i> Under: <?php echo htmlspecialchars($promoter['ParentName']); ?>
-                                                </span>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td><?php echo htmlspecialchars($promoter['Contact']); ?></td>
-                                        <td><?php echo htmlspecialchars($promoter['Email'] ?? 'N/A'); ?></td>
-                                        <td>
-                                            <span class="status-badge status-<?php echo strtolower($promoter['Status']); ?>">
-                                                <?php echo $promoter['Status']; ?>
-                                            </span>
-                                        </td>
-                                        <td class="payment-code-counter"><?php echo $promoter['PaymentCodeCounter']; ?></td>
-                                        <td>
-                                            <span class="customer-count">
-                                                <?php echo isset($promoterCustomerCounts[$promoter['PromoterID']]) ? $promoterCustomerCounts[$promoter['PromoterID']] : 0; ?>
-                                            </span>
-                                        </td>
-                                        <td><?php echo date('M d, Y', strtotime($promoter['CreatedAt'])); ?></td>
-                                        <td>
-                                            <div class="promoter-actions">
-                                                <a href="view.php?id=<?php echo $promoter['PromoterID']; ?>" class="view-btn" title="View Details">
-                                                    <i class="fas fa-eye"></i>
-                                                </a>
+    <table class="promoter-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Contact</th>
+                <th>Email</th>
+                <th>Status</th>
+                <th>Codes</th>
+                <th>Customers</th>
+                <th>Created</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php foreach ($promoters as $promoter): ?>
+                <tr>
+                    <td><?php echo $promoter['PromoterUniqueID']; ?></td>
+                    <td>
+                        <?php echo htmlspecialchars($promoter['Name']); ?>
+                        <?php if (!empty($promoter['ParentName'])): ?>
+                            <span class="parent-promoter">
+                                <i class="fas fa-user-friends"></i> Under: <?php echo htmlspecialchars($promoter['ParentName']); ?>
+                            </span>
+                        <?php endif; ?>
+                    </td>
+                    <td><?php echo htmlspecialchars($promoter['Contact']); ?></td>
+                    <td><?php echo htmlspecialchars($promoter['Email'] ?? 'N/A'); ?></td>
+                    <td>
+                        <span class="status-badge status-<?php echo strtolower($promoter['Status']); ?>">
+                            <?php echo $promoter['Status']; ?>
+                        </span>
+                    </td>
+                    <td><span class="payment-code-counter"><?php echo $promoter['PaymentCodeCounter']; ?></span></td>
+                    <td>
+                        <span class="customer-count">
+                            <?php echo isset($promoterCustomerCounts[$promoter['PromoterID']]) ? $promoterCustomerCounts[$promoter['PromoterID']] : 0; ?>
+                        </span>
+                    </td>
+                    <td><?php echo date('M d, Y', strtotime($promoter['CreatedAt'])); ?></td>
+                    <td>
+                        <div class="promoter-actions">
+                            <a href="view.php?id=<?php echo $promoter['PromoterID']; ?>" class="view-btn" title="View Details">
+                                <i class="fas fa-eye"></i>
+                            </a>
 
-                                                <a href="edit.php?id=<?php echo $promoter['PromoterID']; ?>" class="edit-btn" title="Edit">
-                                                    <i class="fas fa-edit"></i>
-                                                </a>
+                            <a href="edit.php?id=<?php echo $promoter['PromoterID']; ?>" class="edit-btn" title="Edit">
+                                <i class="fas fa-edit"></i>
+                            </a>
 
-                                                <?php if ($promoter['Status'] == 'Active'): ?>
-                                                    <a href="index.php?status=deactivate&id=<?php echo $promoter['PromoterID']; ?>"
-                                                        class="deactivate-btn"
-                                                        title="Deactivate"
-                                                        onclick="return confirm('Are you sure you want to deactivate this promoter?');">
-                                                        <i class="fas fa-ban"></i>
-                                                    </a>
-                                                <?php else: ?>
-                                                    <a href="index.php?status=activate&id=<?php echo $promoter['PromoterID']; ?>"
-                                                        class="activate-btn"
-                                                        title="Activate"
-                                                        onclick="return confirm('Are you sure you want to activate this promoter?');">
-                                                        <i class="fas fa-check"></i>
-                                                    </a>
-                                                <?php endif; ?>
+                            <?php if ($promoter['Status'] == 'Active'): ?>
+                                <a href="index.php?status=deactivate&id=<?php echo $promoter['PromoterID']; ?>"
+                                   class="deactivate-btn"
+                                   title="Deactivate"
+                                   onclick="return confirm('Are you sure you want to deactivate this promoter?');">
+                                    <i class="fas fa-ban"></i>
+                                </a>
+                            <?php else: ?>
+                                <a href="index.php?status=activate&id=<?php echo $promoter['PromoterID']; ?>"
+                                   class="activate-btn"
+                                   title="Activate"
+                                   onclick="return confirm('Are you sure you want to activate this promoter?');">
+                                    <i class="fas fa-check"></i>
+                                </a>
+                            <?php endif; ?>
 
-                                                <a href="index.php?delete=<?php echo $promoter['PromoterID']; ?>"
-                                                    class="delete-btn"
-                                                    title="Delete"
-                                                    onclick="return confirm('Are you sure you want to delete this promoter? This action cannot be undone and will also remove all associated customers.');">
-                                                    <i class="fas fa-trash-alt"></i>
-                                                </a>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
+                            <a href="index.php?delete=<?php echo $promoter['PromoterID']; ?>"
+                               class="delete-btn"
+                               title="Delete"
+                               onclick="return confirm('Are you sure you want to delete this promoter? This action cannot be undone and will also remove all associated customers.');">
+                                <i class="fas fa-trash-alt"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+            <?php endforeach; ?>
+        </tbody>
+    </table>
+</div>
 
                     <!-- Pagination -->
                     <?php if ($totalPages > 1): ?>

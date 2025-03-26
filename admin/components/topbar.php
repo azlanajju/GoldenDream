@@ -1,86 +1,118 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <style>
+    :root {
+        --topbar-height: 70px;
+        --Topprimary-color: #3a7bd5;
+        --Topsecondary-color: #00d2ff;
+        --Toptext-dark: #2c3e50;
+        --Toptext-light: #7f8c8d;
+        --topborder-color: #e5e9f2;
+        --Topbg-light: #f8f9fa;
+        --shadow-sm: 0 2px 5px rgba(0, 0, 0, 0.05);
+        --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+        --transition-speed: 0.3s;
+    }
+
     .topbar {
         position: fixed;
         top: 0;
         right: 0;
         left: var(--sidebar-width);
-        height: 70px;
+        height: var(--topbar-height);
         background: white;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        box-shadow: var(--shadow-sm);
         z-index: 900;
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 0 30px;
+        padding: 0 25px;
         transition: left var(--transition-speed) ease;
+        border-bottom: 1px solid var(--topborder-color);
     }
 
     .content-wrapper {
-        padding-top: 90px !important;
-        /* Adjusted to account for topbar */
+        padding-top: calc(var(--topbar-height) + 20px) !important;
     }
 
     .sidebar.collapsed+.topbar {
         left: var(--sidebar-collapsed-width);
     }
 
-    .search-container {
-        position: relative;
-        width: 40%;
+    /* Left section */
+    .topbar-left {
+        display: flex;
+        align-items: center;
     }
 
-    .search-container input {
-        width: 100%;
-        padding: 10px 20px;
-        padding-left: 45px;
-        border-radius: 25px;
-        border: 1px solid #e0e0e0;
-        font-size: 14px;
-        background-color: #f5f5f5;
-        transition: all 0.3s ease;
+    .page-title-container {
+        margin-left: 10px;
     }
 
-    .search-container input:focus {
-        background-color: white;
-        box-shadow: 0 0 10px rgba(58, 123, 213, 0.1);
-        border-color: var(--primary-color);
-        outline: none;
+    .page-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--Toptext-dark);
+        margin: 0;
     }
 
-    .search-container i {
-        position: absolute;
-        left: 15px;
-        top: 50%;
-        transform: translateY(-50%);
-        color: #999;
-        font-size: 16px;
+    .breadcrumb {
+        display: flex;
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        font-size: 12px;
+        color: var(--text-light);
     }
 
-    .topbar-actions {
+    .breadcrumb-item {
+        display: flex;
+        align-items: center;
+    }
+
+    .breadcrumb-item:not(:last-child)::after {
+        content: '/';
+        margin: 0 5px;
+        color: #ccc;
+    }
+
+    .breadcrumb-item a {
+        color: var(--text-light);
+        text-decoration: none;
+    }
+
+    .breadcrumb-item a:hover {
+        color: var(--Topprimary-color);
+    }
+
+    .breadcrumb-item.active {
+        color: var(--Topprimary-color);
+    }
+
+    /* Right section */
+    .topbar-right {
         display: flex;
         align-items: center;
     }
 
     .action-icon {
         position: relative;
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
+        width: 38px;
+        height: 38px;
+        border-radius: 8px;
         display: flex;
         align-items: center;
         justify-content: center;
-        color: #555;
-        margin-left: 15px;
+        color: var(--Toptext-dark);
+        margin-left: 12px;
         cursor: pointer;
-        transition: all 0.3s ease;
-        background-color: #f5f5f5;
+        transition: all 0.2s ease;
+        background-color: var(--Topbg-light);
     }
 
     .action-icon:hover {
-        background-color: #e0e0e0;
-        color: var(--primary-color);
+        background-color: rgba(58, 123, 213, 0.1);
+        color: var(--Topprimary-color);
     }
 
     .action-icon .badge {
@@ -97,31 +129,33 @@
         justify-content: center;
         border-radius: 50%;
         font-weight: bold;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     }
 
+    /* User profile styles */
     .user-profile {
         display: flex;
         align-items: center;
-        margin-left: 25px;
+        margin-left: 20px;
         cursor: pointer;
         position: relative;
+        border-left: 1px solid var(--topborder-color);
+        padding-left: 20px;
     }
 
     .user-avatar {
-        width: 45px;
-        height: 45px;
-        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
         overflow: hidden;
         margin-right: 12px;
-        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        background: linear-gradient(135deg, var(--Topprimary-color), var(--Topsecondary-color));
         display: flex;
         align-items: center;
         justify-content: center;
         color: white;
-        font-weight: bold;
-        font-size: 18px;
-        border: 2px solid white;
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        font-weight: 600;
+        font-size: 16px;
     }
 
     .user-avatar img {
@@ -136,24 +170,31 @@
     }
 
     .user-name {
-        font-size: 15px;
+        font-size: 14px;
         font-weight: 600;
-        color: #333;
+        color: var(--Toptext-dark);
     }
 
     .user-role {
         font-size: 12px;
-        color: #777;
+        color: var(--text-light);
+    }
+
+    .dropdown-toggle {
+        display: flex;
+        align-items: center;
     }
 
     .dropdown-icon {
-        margin-left: 10px;
-        color: #999;
-        transition: transform 0.3s ease;
+        margin-left: 8px;
+        color: var(--text-light);
+        transition: transform 0.2s ease;
+        font-size: 12px;
     }
 
     .user-profile:hover .dropdown-icon {
         transform: rotate(180deg);
+        color: var(--Topprimary-color);
     }
 
     .user-dropdown {
@@ -162,14 +203,15 @@
         right: 0;
         width: 200px;
         background: white;
-        border-radius: 10px;
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-        padding: 10px 0;
+        border-radius: 8px;
+        box-shadow: var(--shadow-md);
+        padding: 8px 0;
         opacity: 0;
         visibility: hidden;
         transform: translateY(10px);
-        transition: all 0.3s ease;
+        transition: all 0.2s ease;
         z-index: 1000;
+        border: 1px solid var(--topborder-color);
     }
 
     .user-profile:hover .user-dropdown {
@@ -179,31 +221,36 @@
     }
 
     .dropdown-item {
-        padding: 12px 20px;
+        padding: 10px 15px;
         display: flex;
         align-items: center;
-        color: #333;
-        font-size: 14px;
-        transition: all 0.3s ease;
+        color: var(--Toptext-dark);
+        font-size: 13px;
+        transition: all 0.2s ease;
         text-decoration: none;
     }
 
     .dropdown-item i {
         margin-right: 10px;
-        font-size: 16px;
-        width: 20px;
+        font-size: 15px;
+        width: 18px;
         text-align: center;
+        color: var(--text-light);
     }
 
     .dropdown-item:hover {
-        background-color: #f5f5f5;
-        color: var(--primary-color);
+        background-color: rgba(58, 123, 213, 0.05);
+        color: var(--Topprimary-color);
+    }
+
+    .dropdown-item:hover i {
+        color: var(--Topprimary-color);
     }
 
     .dropdown-divider {
         height: 1px;
-        background-color: #e0e0e0;
-        margin: 8px 0;
+        background-color: var(--topborder-color);
+        margin: 6px 0;
     }
 
     .logout-item {
@@ -211,58 +258,97 @@
     }
 
     .logout-item:hover {
-        background-color: rgba(231, 76, 60, 0.1);
+        background-color: rgba(231, 76, 60, 0.05);
+        color: #e74c3c;
+    }
+
+    .logout-item i {
         color: #e74c3c;
     }
 
     /* Responsive styles */
     @media (max-width: 991px) {
-        .search-container {
-            width: 30%;
+        .breadcrumb {
+            display: none;
         }
     }
 
     @media (max-width: 768px) {
-
-        .user-info,
-        .search-container {
+        .user-info {
             display: none;
         }
 
         .topbar {
             padding: 0 15px;
         }
+
+        .user-profile {
+            padding-left: 12px;
+            margin-left: 12px;
+        }
     }
 
     @media (max-width: 480px) {
         .action-icon {
-            width: 35px;
-            height: 35px;
-            margin-left: 10px;
+            width: 34px;
+            height: 34px;
+            margin-left: 8px;
+        }
+
+        .page-title {
+            font-size: 16px;
+        }
+
+        .topbar-left {
+            max-width: 55%;
+        }
+
+        .page-title {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
     }
 </style>
 
 <div class="topbar" id="topbar">
-    <div class="search-container">
-        <i class="fas fa-search"></i>
-        <input type="text" placeholder="Search...">
+    <div class="topbar-left">
+        <div class="page-title-container">
+            <h1 class="page-title"><?php echo ucfirst(str_replace('-', ' ', $currentPage)); ?></h1>
+            <ul class="breadcrumb">
+                <li class="breadcrumb-item"><a href="<?php echo $menuPath; ?>dashboard/">Dashboard</a></li>
+                <?php if ($currentPage != 'dashboard'): ?>
+                    <li class="breadcrumb-item active"><?php echo ucfirst(str_replace('-', ' ', $currentPage)); ?></li>
+                <?php endif; ?>
+            </ul>
+        </div>
     </div>
 
-    <div class="topbar-actions">
-        <div class="action-icon">
+    <div class="topbar-right">
+        <a href="<?php echo $menuPath; ?>notifications/" class="action-icon" title="Notifications">
             <i class="fas fa-bell"></i>
-            <span class="badge">3</span>
-        </div>
+            <?php
+            // Count unread notifications
+            try {
+                $stmt = $conn->prepare("SELECT COUNT(*) as count FROM Notifications WHERE UserType = 'Admin' AND UserID = ? AND IsRead = 0");
+                $stmt->execute([$_SESSION['admin_id']]);
+                $notificationCount = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
 
-        <div class="action-icon">
-            <i class="fas fa-envelope"></i>
-            <span class="badge">5</span>
-        </div>
+                if ($notificationCount > 0):
+            ?>
+                    <span class="badge"><?php echo $notificationCount > 9 ? '9+' : $notificationCount; ?></span>
+                <?php endif; ?>
+            <?php } catch (Exception $e) { /* Silently fail */
+            } ?>
+        </a>
+
+        <a href="<?php echo $menuPath; ?>activity-logs/" class="action-icon" title="Activity Logs">
+            <i class="fas fa-history"></i>
+        </a>
 
         <div class="user-profile">
             <?php
-            // Get admin info from session (adjust according to your authentication system)
+            // Get admin info from session
             $adminName = isset($_SESSION['admin_name']) ? $_SESSION['admin_name'] : 'Admin User';
             $adminRole = isset($_SESSION['admin_role']) ? $_SESSION['admin_role'] : 'Administrator';
             $adminImage = isset($_SESSION['admin_image']) ? $_SESSION['admin_image'] : '';
@@ -277,20 +363,22 @@
             }
             ?>
 
-            <div class="user-avatar">
-                <?php if (!empty($adminImage) && file_exists($adminImage)): ?>
-                    <img src="<?php echo $adminImage; ?>" alt="<?php echo $adminName; ?>">
-                <?php else: ?>
-                    <?php echo $initials; ?>
-                <?php endif; ?>
-            </div>
+            <div class="dropdown-toggle">
+                <div class="user-avatar">
+                    <?php if (!empty($adminImage) && file_exists($adminImage)): ?>
+                        <img src="<?php echo $adminImage; ?>" alt="<?php echo $adminName; ?>">
+                    <?php else: ?>
+                        <?php echo $initials; ?>
+                    <?php endif; ?>
+                </div>
 
-            <div class="user-info">
-                <span class="user-name"><?php echo $adminName; ?></span>
-                <span class="user-role"><?php echo $adminRole; ?></span>
-            </div>
+                <div class="user-info">
+                    <span class="user-name"><?php echo $adminName; ?></span>
+                    <span class="user-role"><?php echo $adminRole; ?></span>
+                </div>
 
-            <i class="fas fa-chevron-down dropdown-icon"></i>
+                <i class="fas fa-chevron-down dropdown-icon"></i>
+            </div>
 
             <div class="user-dropdown">
                 <a href="<?php echo $menuPath; ?>profile.php" class="dropdown-item">
@@ -313,7 +401,6 @@
         // Adjust content and topbar when sidebar is toggled
         const sidebar = document.getElementById('sidebar');
         const topbar = document.getElementById('topbar');
-        const content = document.getElementById('content');
 
         // Ensure topbar adjusts when sidebar state changes
         const observer = new MutationObserver((mutations) => {

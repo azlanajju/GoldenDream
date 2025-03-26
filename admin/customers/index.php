@@ -490,6 +490,119 @@ include("../components/topbar.php");
         .status-container:hover .status-dropdown {
             display: block;
         }
+
+        /* Customer Table Improvements */
+        .customer-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin-top: 15px;
+            font-size: 14px;
+        }
+
+        .customer-table th {
+            background: linear-gradient(to bottom, #f8f9fa, #e9ecef);
+            text-align: left;
+            padding: 12px 15px;
+            font-weight: 600;
+            color: #495057;
+            border-bottom: 2px solid #dee2e6;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .customer-table td {
+            padding: 10px 15px;
+            vertical-align: middle;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .customer-table tr:hover {
+            background-color: rgba(0, 123, 255, 0.04);
+        }
+
+        .customer-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .customer-id {
+            font-family: 'Roboto Mono', monospace;
+            font-size: 13px;
+            color: #6c757d;
+        }
+
+        .action-buttons-cell {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+
+        .action-button {
+            padding: 5px 10px;
+            border-radius: 4px;
+            color: white;
+            text-decoration: none;
+            font-size: 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.2s;
+        }
+
+        .view-btn {
+            background-color: #17a2b8;
+        }
+
+        .view-btn:hover {
+            background-color: #138496;
+        }
+
+        .edit-btn {
+            background-color: #ffc107;
+            color: #212529;
+        }
+
+        .edit-btn:hover {
+            background-color: #e0a800;
+        }
+
+        .delete-btn {
+            background-color: #dc3545;
+        }
+
+        .delete-btn:hover {
+            background-color: #c82333;
+        }
+
+        .customer-status {
+            padding: 4px 8px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            display: inline-block;
+        }
+
+        .status-active {
+            background-color: rgba(40, 167, 69, 0.1);
+            color: #28a745;
+            border: 1px solid rgba(40, 167, 69, 0.2);
+        }
+
+        .status-inactive {
+            background-color: rgba(220, 53, 69, 0.1);
+            color: #dc3545;
+            border: 1px solid rgba(220, 53, 69, 0.2);
+        }
+
+        /* Responsive table */
+        @media (max-width: 768px) {
+            .customer-table {
+                display: block;
+                overflow-x: auto;
+                white-space: nowrap;
+            }
+        }
     </style>
 </head>
 
@@ -579,83 +692,34 @@ include("../components/topbar.php");
                                     <th>Name</th>
                                     <th>Contact</th>
                                     <th>Email</th>
+                                    <th>Promoter</th>
                                     <th>Status</th>
-                                    <th>Payments</th>
-                                    <th>Amount</th>
-                                    <th>Created</th>
+                                    <th>Date</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <?php foreach ($customers as $customer): ?>
                                     <tr>
-                                        <td><?php echo $customer['CustomerUniqueID']; ?></td>
-                                        <td>
-                                            <?php echo htmlspecialchars($customer['Name']); ?>
-                                            <?php if (!empty($customer['PromoterName'])): ?>
-                                                <span class="promoter-info">
-                                                    <i class="fas fa-user-tie"></i> Promoter: <?php echo htmlspecialchars($customer['PromoterName']); ?>
-                                                </span>
-                                            <?php endif; ?>
-                                            <?php if (!empty($customer['ReferredBy'])): ?>
-                                                <span class="promoter-info">
-                                                    <i class="fas fa-users"></i> Referred by: <?php echo htmlspecialchars($customer['ReferredBy']); ?>
-                                                </span>
-                                            <?php endif; ?>
-                                        </td>
+                                        <td><span class="customer-id"><?php echo $customer['CustomerUniqueID']; ?></span></td>
+                                        <td><?php echo htmlspecialchars($customer['Name']); ?></td>
                                         <td><?php echo htmlspecialchars($customer['Contact']); ?></td>
-                                        <td><?php echo htmlspecialchars($customer['Email'] ?? 'N/A'); ?></td>
-                                        <td class="status-container">
-                                            <span class="status-badge status-<?php echo strtolower($customer['Status']); ?>">
-                                                <?php echo $customer['Status']; ?>
-                                            </span>
-
-                                            <div class="status-dropdown">
-                                                <a href="index.php?id=<?php echo $customer['CustomerID']; ?>&status=Active"
-                                                    class="active-status"
-                                                    onclick="return confirm('Change status to Active?');">
-                                                    <i class="fas fa-check-circle"></i> Set Active
-                                                </a>
-                                                <a href="index.php?id=<?php echo $customer['CustomerID']; ?>&status=Inactive"
-                                                    class="inactive-status"
-                                                    onclick="return confirm('Change status to Inactive?');">
-                                                    <i class="fas fa-ban"></i> Set Inactive
-                                                </a>
-                                                <a href="index.php?id=<?php echo $customer['CustomerID']; ?>&status=Suspended"
-                                                    class="suspended-status"
-                                                    onclick="return confirm('Change status to Suspended?');">
-                                                    <i class="fas fa-exclamation-circle"></i> Set Suspended
-                                                </a>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <span class="payment-count">
-                                                <?php echo isset($customerPaymentCounts[$customer['CustomerID']]) ? $customerPaymentCounts[$customer['CustomerID']] : 0; ?>
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <span class="payment-sum">
-                                                ₹<?php echo isset($customerPaymentSums[$customer['CustomerID']]) ? number_format($customerPaymentSums[$customer['CustomerID']], 0) : 0; ?>
-                                            </span>
-                                        </td>
+                                        <td><?php echo !empty($customer['Email']) ? htmlspecialchars($customer['Email']) : '-'; ?></td>
+                                        <td><?php echo !empty($customer['PromoterName']) ? htmlspecialchars($customer['PromoterName']) : 'Direct'; ?></td>
+                                        <td><span class="customer-status status-<?php echo strtolower($customer['Status']); ?>"><?php echo $customer['Status']; ?></span></td>
                                         <td><?php echo date('M d, Y', strtotime($customer['CreatedAt'])); ?></td>
-                                        <td>
-                                            <div class="customer-actions">
-                                                <a href="view.php?id=<?php echo $customer['CustomerID']; ?>" class="view-btn" title="View Details">
-                                                    <i class="fas fa-eye"></i>
-                                                </a>
-
-                                                <a href="edit.php?id=<?php echo $customer['CustomerID']; ?>" class="edit-btn" title="Edit">
-                                                    <i class="fas fa-edit"></i>
-                                                </a>
-
-                                                <a href="index.php?delete=<?php echo $customer['CustomerID']; ?>"
-                                                    class="delete-btn"
-                                                    title="Delete"
-                                                    onclick="return confirm('Are you sure you want to delete this customer? This action cannot be undone and will also remove all associated payments and subscriptions.');">
-                                                    <i class="fas fa-trash-alt"></i>
-                                                </a>
-                                            </div>
+                                        <td class="action-buttons-cell">
+                                            <a href="view.php?id=<?php echo $customer['CustomerID']; ?>" class="action-button view-btn">
+                                                <i class="fas fa-eye"></i> View
+                                            </a>
+                                            <a href="edit.php?id=<?php echo $customer['CustomerID']; ?>" class="action-button edit-btn">
+                                                <i class="fas fa-edit"></i> Edit
+                                            </a>
+                                            <a href="index.php?delete=<?php echo $customer['CustomerID']; ?>"
+                                                class="action-button delete-btn"
+                                                onclick="return confirm('Are you sure you want to delete this customer? This action cannot be undone.');">
+                                                <i class="fas fa-trash"></i> Delete
+                                            </a>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>
