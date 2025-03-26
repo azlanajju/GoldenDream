@@ -180,15 +180,30 @@ include("../components/topbar.php");
     <style>
         .payment-card {
             background: white;
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            transition: transform 0.3s ease;
+            border-radius: 12px;
+            padding: 22px;
+            margin-bottom: 25px;
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+            border-left: 4px solid transparent;
         }
 
         .payment-card:hover {
-            transform: translateY(-2px);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Add status-based border colors */
+        .payment-card[data-status="Pending"] {
+            border-left-color: #f39c12;
+        }
+
+        .payment-card[data-status="Verified"] {
+            border-left-color: #2ecc71;
+        }
+
+        .payment-card[data-status="Rejected"] {
+            border-left-color: #e74c3c;
         }
 
         .payment-header {
@@ -221,39 +236,50 @@ include("../components/topbar.php");
 
         .action-btn {
             padding: 8px 15px;
-            border-radius: 6px;
+            border-radius: 8px;
             color: white;
             border: none;
             cursor: pointer;
             font-size: 13px;
             display: inline-flex;
             align-items: center;
-            gap: 5px;
+            gap: 6px;
             transition: all 0.3s ease;
+            text-decoration: none;
+            font-weight: 500;
         }
 
         .verify-btn {
-            background: #2ecc71;
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+            box-shadow: 0 3px 6px rgba(46, 204, 113, 0.3);
         }
 
         .verify-btn:hover {
-            background: #27ae60;
+            background: linear-gradient(135deg, #27ae60, #2ecc71);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 10px rgba(46, 204, 113, 0.4);
         }
 
         .reject-btn {
-            background: #e74c3c;
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            box-shadow: 0 3px 6px rgba(231, 76, 60, 0.3);
         }
 
         .reject-btn:hover {
-            background: #c0392b;
+            background: linear-gradient(135deg, #c0392b, #e74c3c);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 10px rgba(231, 76, 60, 0.4);
         }
 
         .view-btn {
-            background: #3498db;
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            box-shadow: 0 3px 6px rgba(52, 152, 219, 0.3);
         }
 
         .view-btn:hover {
-            background: #2980b9;
+            background: linear-gradient(135deg, #2980b9, #3498db);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 10px rgba(52, 152, 219, 0.4);
         }
 
         .payment-details {
@@ -281,37 +307,72 @@ include("../components/topbar.php");
         }
 
         .status-badge {
-            padding: 4px 8px;
-            border-radius: 12px;
+            padding: 5px 10px;
+            border-radius: 50px;
             font-size: 12px;
-            font-weight: 500;
-            display: inline-block;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
         }
 
         .status-pending {
-            background-color: rgba(243, 156, 18, 0.1);
+            background-color: rgba(243, 156, 18, 0.15);
             color: #f39c12;
         }
 
+        .status-pending::before {
+            content: "•";
+            animation: blink 1.5s infinite;
+            font-size: 18px;
+            line-height: 0;
+        }
+
         .status-verified {
-            background-color: rgba(46, 204, 113, 0.1);
+            background-color: rgba(46, 204, 113, 0.15);
             color: #2ecc71;
         }
 
+        .status-verified::before {
+            content: "✓";
+            font-size: 11px;
+        }
+
         .status-rejected {
-            background-color: rgba(231, 76, 60, 0.1);
+            background-color: rgba(231, 76, 60, 0.15);
             color: #e74c3c;
+        }
+
+        .status-rejected::before {
+            content: "✕";
+            font-size: 11px;
+        }
+
+        @keyframes blink {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
         }
 
         .payment-screenshot {
             max-width: 200px;
-            border-radius: 6px;
+            border-radius: 8px;
             cursor: pointer;
-            transition: transform 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
         }
 
         .payment-screenshot:hover {
             transform: scale(1.05);
+            border-color: #3498db;
         }
 
         .modal {
@@ -325,107 +386,454 @@ include("../components/topbar.php");
             z-index: 1000;
             justify-content: center;
             align-items: center;
+            backdrop-filter: blur(5px);
+            transition: all 0.3s ease;
         }
 
         .modal-content {
             max-width: 90%;
             max-height: 90%;
+            position: relative;
+            animation: zoomIn 0.3s ease;
+        }
+
+        @keyframes zoomIn {
+            from {
+                transform: scale(0.9);
+                opacity: 0;
+            }
+
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
         }
 
         .modal-image {
             max-width: 100%;
             max-height: 90vh;
             border-radius: 8px;
+            box-shadow: 0 5px 25px rgba(0, 0, 0, 0.2);
         }
 
         .close-modal {
             position: absolute;
-            top: 20px;
-            right: 20px;
+            top: -30px;
+            right: -30px;
             color: white;
-            font-size: 24px;
+            font-size: 28px;
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .close-modal:hover {
+            background: rgba(231, 76, 60, 0.8);
+            transform: rotate(90deg);
+        }
+
+        .confirmation-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1001;
+            backdrop-filter: blur(3px);
+        }
+
+        .confirmation-dialog {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            width: 400px;
+            max-width: 90%;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .confirmation-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        .icon-verify {
+            color: #2ecc71;
+        }
+
+        .icon-reject {
+            color: #e74c3c;
+        }
+
+        .confirmation-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+
+        .confirmation-message {
+            font-size: 14px;
+            color: #7f8c8d;
+            margin-bottom: 20px;
+        }
+
+        .confirmation-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .confirmation-btn {
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            transition: all 0.3s ease;
+        }
+
+        .confirm-btn {
+            background: #3498db;
+            color: white;
+        }
+
+        .confirm-btn:hover {
+            background: #2980b9;
+        }
+
+        .cancel-confirm-btn {
+            background: #f1f2f6;
+            color: #576574;
+        }
+
+        .cancel-confirm-btn:hover {
+            background: #dfe4ea;
+        }
+
+        /* Loading animation */
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px 15px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .loading-spinner {
+            border: 3px solid rgba(52, 152, 219, 0.2);
+            border-radius: 50%;
+            border-top: 3px solid #3498db;
+            width: 28px;
+            height: 28px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 12px;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        /* Quick view panel */
+        .quick-view-panel {
+            position: fixed;
+            top: 0;
+            right: -420px;
+            width: 420px;
+            height: 100%;
+            background: white;
+            box-shadow: -2px 0 20px rgba(0, 0, 0, 0.15);
+            z-index: 999;
+            transition: right 0.3s ease;
+            overflow-y: auto;
+            border-left: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .quick-view-panel.active {
+            right: 0;
+        }
+
+        .quick-view-header {
+            padding: 20px;
+            border-bottom: 1px solid #f1f2f6;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .quick-view-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .close-panel {
+            font-size: 20px;
+            color: #7f8c8d;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .close-panel:hover {
+            color: #e74c3c;
+            transform: rotate(90deg);
+        }
+
+        .quick-view-content {
+            padding: 25px;
+        }
+
+        .quick-view-image {
+            width: 100%;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s ease;
+        }
+
+        .quick-view-image:hover {
+            transform: scale(1.02);
             cursor: pointer;
         }
 
+        @media (max-width: 600px) {
+            .quick-view-panel {
+                width: 100%;
+                right: -100%;
+            }
+        }
+
+        /* Form controls enhancement */
+        .remarks-form {
+            margin-top: 15px;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 3px solid #3498db;
+            box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .remarks-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #dfe6e9;
+            border-radius: 8px;
+            font-size: 14px;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+            resize: vertical;
+            min-height: 80px;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .remarks-input:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+        }
+
+        .remarks-submit {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .cancel-btn,
+        .submit-btn {
+            padding: 8px 18px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            transition: all 0.3s ease;
+        }
+
+        .cancel-btn {
+            background: #f1f2f6;
+            color: #576574;
+        }
+
+        .cancel-btn:hover {
+            background: #dfe4ea;
+        }
+
+        .submit-btn {
+            background: #3498db;
+            color: white;
+        }
+
+        .submit-btn:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+        }
+
+        /* Filter section styles */
         .filter-container {
             display: flex;
-            gap: 15px;
-            margin-bottom: 20px;
             flex-wrap: wrap;
-            align-items: center;
+            gap: 15px;
+            margin-bottom: 25px;
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .search-box {
+            flex: 1 1 300px;
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 10px 15px;
+            padding-left: 40px;
+            border: 1px solid #dfe6e9;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%23a4b0be" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>');
+            background-repeat: no-repeat;
+            background-position: 12px center;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
         }
 
         .filter-group {
             display: flex;
             align-items: center;
             gap: 8px;
+            flex: 1 1 200px;
         }
 
         .filter-label {
             font-size: 14px;
-            color: #34495e;
+            color: #576574;
+            white-space: nowrap;
             font-weight: 500;
         }
 
+        .filter-select,
         .filter-input {
+            flex: 1;
             padding: 8px 12px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
+            border: 1px solid #dfe6e9;
+            border-radius: 8px;
             font-size: 14px;
+            background-color: white;
+            color: #2d3436;
+            transition: all 0.3s ease;
+        }
+
+        .filter-select:focus,
+        .filter-input:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
         }
 
         .filter-select {
-            padding: 8px 12px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            font-size: 14px;
-            min-width: 150px;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="%23a4b0be" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>');
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 30px;
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
         }
 
-        .search-box {
-            flex: 1;
-            min-width: 200px;
+        /* Responsive adjustments for filters */
+        @media (max-width: 768px) {
+            .filter-container {
+                flex-direction: column;
+                gap: 12px;
+            }
+
+            .filter-group {
+                flex-wrap: wrap;
+            }
+
+            .filter-group:has(.filter-input) {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .filter-group:has(.filter-input) .filter-label {
+                margin-bottom: 5px;
+            }
+
+            .filter-group:has(.filter-input) span {
+                margin: 5px 0;
+            }
         }
 
-        .search-input {
-            width: 100%;
-            padding: 10px 15px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            font-size: 14px;
-        }
-
-        .remarks-input {
-            width: 100%;
-            margin-top: 10px;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            font-size: 14px;
-            display: none;
-        }
-
+        /* Contact badge styling */
         .contact-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 10px;
             background-color: rgba(52, 152, 219, 0.1);
             color: #3498db;
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 12px;
-            display: inline-block;
-            margin-top: 5px;
+            border-radius: 50px;
+            font-size: 13px;
+            margin-top: 8px;
         }
 
+        /* Promoter info styling */
         .promoter-info {
-            font-size: 12px;
+            margin-top: 8px;
+            font-size: 13px;
             color: #7f8c8d;
-            margin-top: 5px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
         }
 
+        /* Verifier info styling */
         .verifier-info {
-            font-size: 12px;
+            margin-top: 15px;
+            font-size: 13px;
             color: #7f8c8d;
-            margin-top: 10px;
             font-style: italic;
+            padding-top: 10px;
+            border-top: 1px dashed #ecf0f1;
         }
     </style>
 </head>
@@ -513,16 +921,16 @@ include("../components/topbar.php");
 
                                 <div class="payment-actions">
                                     <?php if ($payment['Status'] === 'Pending'): ?>
-                                        <button class="action-btn verify-btn" onclick="showRemarks(this, 'verify', <?php echo $payment['PaymentID']; ?>)">
+                                        <button class="action-btn verify-btn" onclick="showActionForm(this, 'verify', <?php echo $payment['PaymentID']; ?>)">
                                             <i class="fas fa-check"></i> Verify
                                         </button>
-                                        <button class="action-btn reject-btn" onclick="showRemarks(this, 'reject', <?php echo $payment['PaymentID']; ?>)">
+                                        <button class="action-btn reject-btn" onclick="showActionForm(this, 'reject', <?php echo $payment['PaymentID']; ?>)">
                                             <i class="fas fa-times"></i> Reject
                                         </button>
                                     <?php endif; ?>
-                                    <a href="view.php?id=<?php echo $payment['PaymentID']; ?>" class="action-btn view-btn">
+                                    <button class="action-btn view-btn" onclick="quickView(<?php echo $payment['PaymentID']; ?>, '<?php echo htmlspecialchars($payment['CustomerName']); ?>', '<?php echo htmlspecialchars($payment['SchemeName']); ?>', '<?php echo number_format($payment['Amount'], 2); ?>', '<?php echo htmlspecialchars($payment['ScreenshotURL']); ?>', '<?php echo date('M d, Y H:i', strtotime($payment['SubmittedAt'])); ?>', '<?php echo $payment['Status']; ?>')">
                                         <i class="fas fa-eye"></i> View
-                                    </a>
+                                    </button>
                                 </div>
                             </div>
 
@@ -568,6 +976,14 @@ include("../components/topbar.php");
                                 <input type="hidden" name="payment_id" value="<?php echo $payment['PaymentID']; ?>">
                                 <input type="hidden" name="action" value="">
                                 <textarea name="remarks" class="remarks-input" placeholder="Enter remarks (optional)"></textarea>
+                                <div class="remarks-submit">
+                                    <button type="button" class="cancel-btn" onclick="hideActionForm(this)">Cancel</button>
+                                    <button type="button" class="submit-btn action-confirm-btn" data-action="">Confirm</button>
+                                </div>
+                                <div class="loading">
+                                    <div class="loading-spinner"></div>
+                                    <div>Processing payment...</div>
+                                </div>
                             </form>
                         </div>
                     <?php endforeach; ?>
@@ -615,6 +1031,29 @@ include("../components/topbar.php");
     <div class="modal" id="imageModal" onclick="hideModal()">
         <span class="close-modal">&times;</span>
         <img class="modal-image" id="modalImage">
+    </div>
+
+    <!-- Add the confirmation overlay and quick view panel after the image modal -->
+    <div class="confirmation-overlay" id="confirmationOverlay">
+        <div class="confirmation-dialog">
+            <div class="confirmation-icon"><i class="fas fa-check-circle icon-verify" id="confirmationIcon"></i></div>
+            <div class="confirmation-title" id="confirmationTitle">Verify Payment</div>
+            <div class="confirmation-message" id="confirmationMessage">Are you sure you want to verify this payment?</div>
+            <div class="confirmation-buttons">
+                <button class="confirmation-btn cancel-confirm-btn" onclick="hideConfirmation()">Cancel</button>
+                <button class="confirmation-btn confirm-btn" id="confirmButton">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="quick-view-panel" id="quickViewPanel">
+        <div class="quick-view-header">
+            <div class="quick-view-title">Payment Details</div>
+            <div class="close-panel" onclick="closeQuickView()"><i class="fas fa-times"></i></div>
+        </div>
+        <div class="quick-view-content" id="quickViewContent">
+            <!-- Content will be loaded dynamically -->
+        </div>
     </div>
 
     <script>
@@ -666,42 +1105,172 @@ include("../components/topbar.php");
             document.getElementById('imageModal').style.display = 'none';
         }
 
-        // Handle remarks and form submission
-        function showRemarks(button, action, paymentId) {
+        // New enhanced functions for payment actions
+        function showActionForm(button, action, paymentId) {
             const card = button.closest('.payment-card');
             const form = card.querySelector('.remarks-form');
-            const remarksInput = form.querySelector('.remarks-input');
+            const actionField = form.querySelector('input[name="action"]');
+            const confirmBtn = form.querySelector('.action-confirm-btn');
 
-            // Hide any other visible remarks inputs
-            document.querySelectorAll('.remarks-input').forEach(input => {
-                if (input !== remarksInput) {
-                    input.style.display = 'none';
-                }
+            // Reset any other open forms
+            document.querySelectorAll('.remarks-form').forEach(f => {
+                if (f !== form) f.style.display = 'none';
             });
 
-            if (remarksInput.style.display === 'block') {
-                remarksInput.style.display = 'none';
-                return;
-            }
+            // Setup current form
+            actionField.value = action;
+            confirmBtn.dataset.action = action;
+            form.style.display = 'block';
+            form.querySelector('.remarks-input').focus();
 
-            form.querySelector('input[name="action"]').value = action;
-            remarksInput.style.display = 'block';
-            remarksInput.focus();
-
-            remarksInput.onkeypress = function(e) {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    if (confirm(`Are you sure you want to ${action} this payment?`)) {
-                        form.submit();
-                    }
-                }
-            };
+            // Scroll to make form visible if needed
+            form.scrollIntoView({
+                behavior: 'smooth',
+                block: 'nearest'
+            });
         }
 
-        // Close modal when clicking outside
-        document.getElementById('imageModal').addEventListener('click', function(e) {
-            if (e.target === this) {
+        function hideActionForm(button) {
+            const form = button.closest('.remarks-form');
+            form.style.display = 'none';
+        }
+
+        // Add event listeners to confirmation buttons
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.action-confirm-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const form = this.closest('form');
+                    const action = this.dataset.action;
+                    const paymentId = form.querySelector('input[name="payment_id"]').value;
+                    const remarks = form.querySelector('textarea[name="remarks"]').value;
+
+                    showConfirmation(action, paymentId, remarks, form);
+                });
+            });
+
+            // Add data-status attribute to payment cards
+            document.querySelectorAll('.payment-card').forEach(card => {
+                const statusBadge = card.querySelector('.status-badge');
+                if (statusBadge) {
+                    const status = statusBadge.textContent.trim();
+                    card.setAttribute('data-status', status);
+                }
+            });
+        });
+
+        function showConfirmation(action, paymentId, remarks, form) {
+            const overlay = document.getElementById('confirmationOverlay');
+            const title = document.getElementById('confirmationTitle');
+            const message = document.getElementById('confirmationMessage');
+            const icon = document.getElementById('confirmationIcon');
+            const confirmBtn = document.getElementById('confirmButton');
+
+            // Set content based on action
+            if (action === 'verify') {
+                title.textContent = 'Verify Payment';
+                message.textContent = 'Are you sure you want to verify this payment?';
+                icon.className = 'fas fa-check-circle icon-verify';
+            } else {
+                title.textContent = 'Reject Payment';
+                message.textContent = 'Are you sure you want to reject this payment?';
+                icon.className = 'fas fa-times-circle icon-reject';
+            }
+
+            // Setup confirm button
+            confirmBtn.onclick = function() {
+                hideConfirmation();
+
+                // Show loading state
+                const loading = form.querySelector('.loading');
+                form.querySelector('.remarks-submit').style.display = 'none';
+                loading.style.display = 'block';
+
+                // Submit the form
+                setTimeout(() => {
+                    form.submit();
+                }, 500);
+            };
+
+            // Show overlay
+            overlay.style.display = 'flex';
+        }
+
+        function hideConfirmation() {
+            document.getElementById('confirmationOverlay').style.display = 'none';
+        }
+
+        // Quick view functionality
+        function quickView(paymentId, customerName, schemeName, amount, screenshotURL, submittedAt, status) {
+            const panel = document.getElementById('quickViewPanel');
+            const content = document.getElementById('quickViewContent');
+
+            // Create status badge class
+            const statusClass = `status-${status.toLowerCase()}`;
+
+            // Prepare content
+            content.innerHTML = `
+                <img src="../../${screenshotURL}" class="quick-view-image" onclick="showImage('../../${screenshotURL}')">
+                <div class="detail-item">
+                    <span class="detail-label">Customer</span>
+                    <span class="detail-value">${customerName}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Scheme</span>
+                    <span class="detail-value">${schemeName}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Amount</span>
+                    <span class="detail-value">₹${amount}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Date Submitted</span>
+                    <span class="detail-value">${submittedAt}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Status</span>
+                    <span class="status-badge ${statusClass}">${status}</span>
+                </div>
+                <div style="margin-top: 20px;">
+                    <a href="view.php?id=${paymentId}" class="action-btn view-btn" style="width: 100%; justify-content: center;">
+                        <i class="fas fa-external-link-alt"></i> View Full Details
+                    </a>
+                </div>
+            `;
+
+            // Show panel
+            panel.classList.add('active');
+
+            // Add overlay to body for mobile
+            if (window.innerWidth <= 600) {
+                const overlay = document.createElement('div');
+                overlay.id = 'quickViewOverlay';
+                overlay.style.position = 'fixed';
+                overlay.style.top = '0';
+                overlay.style.left = '0';
+                overlay.style.width = '100%';
+                overlay.style.height = '100%';
+                overlay.style.background = 'rgba(0,0,0,0.5)';
+                overlay.style.zIndex = '998';
+                overlay.onclick = closeQuickView;
+                document.body.appendChild(overlay);
+            }
+        }
+
+        function closeQuickView() {
+            const panel = document.getElementById('quickViewPanel');
+            panel.classList.remove('active');
+
+            // Remove overlay if exists
+            const overlay = document.getElementById('quickViewOverlay');
+            if (overlay) overlay.remove();
+        }
+
+        // Close modals on escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
                 hideModal();
+                hideConfirmation();
+                closeQuickView();
             }
         });
     </script>
