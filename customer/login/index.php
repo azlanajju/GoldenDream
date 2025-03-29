@@ -1,313 +1,181 @@
 <?php
-session_start();
-require_once 'helpers/JWT.php';
+require_once '../config/session_check.php';
 
-// Database connection
-class Database
-{
-  private $host = "localhost";
-  private $db_name = "goldendream";
-  private $username = "root";
-  private $password = "";
-  public $conn;
-
-  public function getConnection()
-  {
-    $this->conn = null;
-    try {
-      $this->conn = new PDO(
-        "mysql:host=" . $this->host . ";dbname=" . $this->db_name,
-        $this->username,
-        $this->password
-      );
-      $this->conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    } catch (PDOException $e) {
-      echo "Connection Error: " . $e->getMessage();
-    }
-    return $this->conn;
-  }
-}
-
-// Check if user is already logged in via session
-if (isset($_SESSION['customer_id'])) {
-  header('Location: dashboard.php');
-  exit;
-}
-
-// Check for existing JWT token
-if (isset($_COOKIE['auth_token'])) {
-  $tokenData = JWT::verifyToken($_COOKIE['auth_token']);
-  if ($tokenData && isset($tokenData['data'])) {
-    $_SESSION['customer_id'] = $tokenData['data']['customer_id'];
-    $_SESSION['customer_unique_id'] = $tokenData['data']['customer_unique_id'];
-    $_SESSION['customer_name'] = $tokenData['data']['name'];
-    $_SESSION['customer_email'] = $tokenData['data']['email'];
-    header('Location: dashboard.php');
+// If user is already logged in, redirect to dashboard
+if (isLoggedIn()) {
+    header('Location: ../dashboard');
     exit;
-  }
-}
-
-// Handle AJAX request
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SERVER['HTTP_X_REQUESTED_WITH']) && $_SERVER['HTTP_X_REQUESTED_WITH'] === 'XMLHttpRequest') {
-  header('Content-Type: application/json');
-
-  $data = json_decode(file_get_contents('php://input'), true);
-
-  if (!$data) {
-    echo json_encode(['success' => false, 'message' => 'Invalid data format']);
-    exit;
-  }
-
-  // Validate required fields
-  $required_fields = ['email', 'password'];
-  foreach ($required_fields as $field) {
-    if (!isset($data[$field]) || empty($data[$field])) {
-      echo json_encode(['success' => false, 'message' => 'All fields are required']);
-      exit;
-    }
-  }
-
-  // Validate email format
-  if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
-    echo json_encode(['success' => false, 'message' => 'Invalid email format']);
-    exit;
-  }
-
-  try {
-    $database = new Database();
-    $db = $database->getConnection();
-
-    // Get customer data
-    $query = "SELECT CustomerID, CustomerUniqueID, Name, Email, PasswordHash, Status 
-                  FROM Customers 
-                  WHERE Email = :email";
-
-    $stmt = $db->prepare($query);
-    $stmt->bindParam(':email', $data['email']);
-    $stmt->execute();
-
-    if ($stmt->rowCount() === 0) {
-      echo json_encode(['success' => false, 'message' => 'Invalid email or password']);
-      exit;
-    }
-
-    $customer = $stmt->fetch(PDO::FETCH_ASSOC);
-
-    // Verify password
-    if (!password_verify($data['password'], $customer['PasswordHash'])) {
-      echo json_encode(['success' => false, 'message' => 'Invalid email or password']);
-      exit;
-    }
-
-    // Check account status
-    if ($customer['Status'] !== 'Active') {
-      echo json_encode(['success' => false, 'message' => 'Your account is not active. Please contact support.']);
-      exit;
-    }
-
-    // Set session variables
-    $_SESSION['customer_id'] = $customer['CustomerID'];
-    $_SESSION['customer_unique_id'] = $customer['CustomerUniqueID'];
-    $_SESSION['customer_name'] = $customer['Name'];
-    $_SESSION['customer_email'] = $customer['Email'];
-
-    // Generate JWT token if remember me is checked
-    if (isset($data['remember']) && $data['remember']) {
-      $tokenData = [
-        'customer_id' => $customer['CustomerID'],
-        'customer_unique_id' => $customer['CustomerUniqueID'],
-        'name' => $customer['Name'],
-        'email' => $customer['Email']
-      ];
-      $token = JWT::generateToken($tokenData);
-
-      // Set cookie with token (30 days)
-      setcookie('auth_token', $token, time() + (30 * 24 * 60 * 60), '/', '', true, true);
-    }
-
-    echo json_encode([
-      'success' => true,
-      'message' => 'Login successful',
-      'redirect' => 'dashboard.php'
-    ]);
-  } catch (PDOException $e) {
-    error_log("Database Error: " . $e->getMessage());
-    echo json_encode(['success' => false, 'message' => 'An error occurred during login']);
-  }
-  exit;
 }
 ?>
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Golden Dream - Login</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
-  <link rel="stylesheet" href="./login.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Golden Dream</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .login-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo h1 {
+            color: #4a90e2;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .form-control {
+            border-radius: 10px;
+            padding: 12px;
+            border: 2px solid #e1e1e1;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus {
+            border-color: #4a90e2;
+            box-shadow: 0 0 0 0.2rem rgba(74, 144, 226, 0.25);
+        }
+
+        .btn-login {
+            background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
+            border: none;
+            border-radius: 10px;
+            padding: 12px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(74, 144, 226, 0.3);
+        }
+
+        .remember-me {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .form-check-input:checked {
+            background-color: #4a90e2;
+            border-color: #4a90e2;
+        }
+
+        .signup-link {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .signup-link a {
+            color: #4a90e2;
+            text-decoration: none;
+        }
+
+        .signup-link a:hover {
+            text-decoration: underline;
+        }
+
+        .error-message {
+            background: #fee2e2;
+            color: #dc2626;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: none;
+        }
+    </style>
 </head>
 
 <body>
-  <div class="container">
-    <div class="login-box">
-      <div class="logo">
-        <i class="fas fa-crown"></i>
-        <h2>Golden Dream</h2>
-      </div>
-      <form id="loginForm" class="login-form">
-        <div class="input-group">
-          <div class="input-field">
-            <i class="fas fa-envelope"></i>
-            <input type="email" id="email" placeholder="Email Address" required>
-          </div>
-          <div class="input-field">
-            <i class="fas fa-lock"></i>
-            <input type="password" id="password" placeholder="Password" required>
-          </div>
+    <div class="login-container">
+        <div class="logo">
+            <h1>Golden Dream</h1>
+            <p class="text-muted">Welcome back! Please login to your account.</p>
         </div>
-        <div class="options">
-          <label class="remember-me">
-            <input type="checkbox" id="remember">
-            <span>Remember me for 30 days</span>
-          </label>
-          <a href="#" class="forgot-password">Forgot Password?</a>
+
+        <div class="error-message" id="errorMessage"></div>
+
+        <form id="loginForm" action="process_login.php" method="POST">
+            <div class="mb-3">
+                <label for="phoneNumber" class="form-label">Phone Number</label>
+                <input type="tel" class="form-control" id="phoneNumber" name="phoneNumber"
+                    placeholder="Enter your phone number" required>
+            </div>
+
+            <div class="mb-3">
+                <label for="password" class="form-label">Password</label>
+                <div class="position-relative">
+                    <input type="password" class="form-control" id="password" name="password"
+                        placeholder="Enter your password" required>
+                    <i class="fas fa-eye position-absolute" style="right: 15px; top: 50%; transform: translateY(-50%); cursor: pointer;"
+                        onclick="togglePassword()"></i>
+                </div>
+            </div>
+
+            <div class="mb-3 remember-me">
+                <input type="checkbox" class="form-check-input" id="rememberMe" name="rememberMe">
+                <label class="form-check-label" for="rememberMe">Remember me for 30 days</label>
+            </div>
+
+            <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-primary btn-login">
+                    <i class="fas fa-sign-in-alt"></i> Login
+                </button>
+            </div>
+        </form>
+
+        <div class="signup-link">
+            <p class="mb-0">Don't have an account? <a href="signup.php">Sign up here</a></p>
         </div>
-        <button type="submit" class="login-btn">Login</button>
-        <div class="register-link">
-          <p>Don't have an account? <a href="signup.php">Sign Up</a></p>
-        </div>
-      </form>
     </div>
-  </div>
 
-  <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      const loginForm = document.getElementById("loginForm");
-      const emailInput = document.getElementById("email");
-      const passwordInput = document.getElementById("password");
-      const rememberCheckbox = document.getElementById("remember");
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function togglePassword() {
+            const passwordInput = document.getElementById('password');
+            const toggleIcon = document.querySelector('.fa-eye');
 
-      // Check for saved credentials
-      const savedEmail = localStorage.getItem("rememberedEmail");
-      if (savedEmail) {
-        emailInput.value = savedEmail;
-        rememberCheckbox.checked = true;
-      }
-
-      loginForm.addEventListener("submit", async (e) => {
-        e.preventDefault();
-
-        const email = emailInput.value;
-        const password = passwordInput.value;
-        const remember = rememberCheckbox.checked;
-
-        // Basic validation
-        if (!email || !password) {
-          showError("Please fill in all fields");
-          return;
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                toggleIcon.classList.remove('fa-eye');
+                toggleIcon.classList.add('fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                toggleIcon.classList.remove('fa-eye-slash');
+                toggleIcon.classList.add('fa-eye');
+            }
         }
 
-        // Email validation
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(email)) {
-          showError("Please enter a valid email address");
-          return;
+        // Check for error message in URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const error = urlParams.get('error');
+        if (error) {
+            const errorMessage = document.getElementById('errorMessage');
+            errorMessage.textContent = decodeURIComponent(error);
+            errorMessage.style.display = 'block';
         }
-
-        // Handle remember me
-        if (remember) {
-          localStorage.setItem("rememberedEmail", email);
-        } else {
-          localStorage.removeItem("rememberedEmail");
-        }
-
-        // Add loading animation to button
-        const loginBtn = loginForm.querySelector(".login-btn");
-        loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Logging in...';
-        loginBtn.disabled = true;
-
-        try {
-          const response = await fetch(window.location.href, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "X-Requested-With": "XMLHttpRequest"
-            },
-            body: JSON.stringify({
-              email,
-              password,
-              remember
-            }),
-          });
-
-          const data = await response.json();
-
-          if (data.success) {
-            showSuccess(data.message);
-            setTimeout(() => {
-              window.location.href = data.redirect;
-            }, 1500);
-          } else {
-            showError(data.message);
-            loginBtn.innerHTML = "Login";
-            loginBtn.disabled = false;
-          }
-        } catch (error) {
-          console.error("Error:", error);
-          showError("An error occurred during login");
-          loginBtn.innerHTML = "Login";
-          loginBtn.disabled = false;
-        }
-      });
-
-      // Add input focus effects
-      const inputFields = document.querySelectorAll(".input-field input");
-      inputFields.forEach((input) => {
-        input.addEventListener("focus", () => {
-          input.parentElement.classList.add("focused");
-        });
-
-        input.addEventListener("blur", () => {
-          if (!input.value) {
-            input.parentElement.classList.remove("focused");
-          }
-        });
-      });
-
-      // Helper function to show error messages
-      function showError(message) {
-        const errorDiv = document.createElement("div");
-        errorDiv.className = "error-message";
-        errorDiv.textContent = message;
-
-        const existingError = document.querySelector(".error-message");
-        if (existingError) {
-          existingError.remove();
-        }
-
-        loginForm.insertBefore(errorDiv, loginForm.firstChild);
-
-        setTimeout(() => {
-          errorDiv.remove();
-        }, 3000);
-      }
-
-      // Helper function to show success messages
-      function showSuccess(message) {
-        const successDiv = document.createElement("div");
-        successDiv.className = "success-message";
-        successDiv.textContent = message;
-
-        const existingSuccess = document.querySelector(".success-message");
-        if (existingSuccess) {
-          existingSuccess.remove();
-        }
-
-        loginForm.insertBefore(successDiv, loginForm.firstChild);
-      }
-    });
-  </script>
+    </script>
 </body>
 
 </html>

@@ -1,41 +1,33 @@
-
 document.addEventListener("DOMContentLoaded", () => {
   const loginForm = document.getElementById("loginForm");
-  const emailInput = document.getElementById("email");
+  const loginIdInput = document.getElementById("login_id");
   const passwordInput = document.getElementById("password");
   const rememberCheckbox = document.getElementById("remember");
 
   // Check for saved credentials
-  const savedEmail = localStorage.getItem("rememberedEmail");
-  if (savedEmail) {
-    emailInput.value = savedEmail;
+  const savedLoginId = localStorage.getItem("rememberedLoginId");
+  if (savedLoginId) {
+    loginIdInput.value = savedLoginId;
     rememberCheckbox.checked = true;
   }
 
   loginForm.addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    const email = emailInput.value;
+    const login_id = loginIdInput.value;
     const password = passwordInput.value;
 
     // Basic validation
-    if (!email || !password) {
+    if (!login_id || !password) {
       showError("Please fill in all fields");
-      return;
-    }
-
-    // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      showError("Please enter a valid email address");
       return;
     }
 
     // Handle remember me
     if (rememberCheckbox.checked) {
-      localStorage.setItem("rememberedEmail", email);
+      localStorage.setItem("rememberedLoginId", login_id);
     } else {
-      localStorage.removeItem("rememberedEmail");
+      localStorage.removeItem("rememberedLoginId");
     }
 
     // Add loading animation to button
@@ -48,11 +40,11 @@ document.addEventListener("DOMContentLoaded", () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-Requested-With": "XMLHttpRequest"
+          "X-Requested-With": "XMLHttpRequest",
         },
         body: JSON.stringify({
-          email,
-          password
+          login_id,
+          password,
         }),
       });
 

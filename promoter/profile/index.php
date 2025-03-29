@@ -374,7 +374,7 @@ $currentPage = 'profile';
         <div class="profile-container">
             <div class="profile-sidebar">
                 <div class="profile-image-container">
-                    <img src="../../uploads
+                    <img src=../../uploads/profile_pictures/image.png
                     <?php 
                         // if ($promoter['ProfileImageURL'] && file_exists($uploadDir . $promoter['ProfileImageURL'])) {
                         //     echo '../../uploads/profile_pictures/image.png';

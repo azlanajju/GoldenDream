@@ -1,8 +1,16 @@
 document.addEventListener("DOMContentLoaded", () => {
   const signupForm = document.getElementById("signupForm");
+  const fullNameInput = document.getElementById("fullName");
+  const phoneInput = document.getElementById("phone");
   const passwordInput = document.getElementById("password");
   const confirmPasswordInput = document.getElementById("confirmPassword");
   const termsCheckbox = document.getElementById("terms");
+
+  // Verify all elements are found
+  if (!signupForm || !fullNameInput || !phoneInput || !passwordInput || !confirmPasswordInput || !termsCheckbox) {
+    console.error("One or more form elements not found!");
+    return;
+  }
 
   // Password validation function
   function validatePassword(password) {
@@ -39,24 +47,28 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  // Phone number validation
+  phoneInput.addEventListener("input", (e) => {
+    e.target.value = e.target.value.replace(/\D/g, "").substring(0, 10);
+  });
+
   signupForm.addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    const fullName = document.getElementById("fullName").value;
-    const email = document.getElementById("email").value;
+    const fullName = fullNameInput.value.trim();
+    const phone = phoneInput.value.trim();
     const password = passwordInput.value;
     const confirmPassword = confirmPasswordInput.value;
 
     // Basic validation
-    if (!fullName || !email || !password || !confirmPassword) {
+    if (!fullName || !phone || !password || !confirmPassword) {
       showError("Please fill in all fields");
       return;
     }
 
-    // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      showError("Please enter a valid email address");
+    // Phone validation
+    if (phone.length !== 10) {
+      showError("Please enter a valid 10-digit phone number");
       return;
     }
 
@@ -92,7 +104,7 @@ document.addEventListener("DOMContentLoaded", () => {
         },
         body: JSON.stringify({
           fullName,
-          email,
+          phone,
           password,
           confirmPassword,
         }),
@@ -102,8 +114,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (data.success) {
         showSuccess(data.message);
-        // Store email in localStorage for remember me functionality
-        localStorage.setItem("rememberedEmail", email);
+        // Store phone in localStorage for remember me functionality
+        localStorage.setItem("rememberedPhone", phone);
         // Redirect after a short delay
         setTimeout(() => {
           window.location.href = data.redirect;
