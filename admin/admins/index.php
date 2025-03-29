@@ -1,10 +1,10 @@
 <?php
 session_start();
-// Check if user is logged in, redirect if not
-// if (!isset($_SESSION['admin_id'])) {
-//     header("Location: ../login.php");
-//     exit();
-// }
+//Check if user is logged in, redirect if not
+if (!isset($_SESSION['admin_id'])) {
+    header("Location: ../login.php");
+    exit();
+}
 
 // Check if the logged-in admin has permission to manage admins
 // Superadmin role check
