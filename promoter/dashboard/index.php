@@ -6,7 +6,8 @@ if (!isset($_SESSION['promoter_id'])) {
     header("Location: ../login.php");
     exit();
 }
-
+$menuPath = "../";
+$currentPage = "dashboard";
 // Database connection
 require_once("../../config/config.php");
 $database = new Database();

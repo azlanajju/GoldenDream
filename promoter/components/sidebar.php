@@ -8,10 +8,10 @@
     :root {
         --sidebar-width: 250px;
         --sidebar-collapsed-width: 70px;
-        --primary-color: #3a7bd5;
+        --primary-color:rgb(13, 106, 80);
         --secondary-color: #2c3e50;
         --text-color: #f0f0f0;
-        --hover-color: #00d2ff;
+        --hover-color:rgb(175, 234, 161);
         --transition-speed: 0.3s;
     }
 
@@ -249,7 +249,7 @@
     </div>
 
     <ul class="sidebar-menu">
-        <li class="<?php echo ($currentPage == 'dashboard') ? 'active' : ''; ?>">
+        <li class="<?php  echo ($currentPage == 'dashboard') ? 'active' : ''; ?>">
             <a href="<?php echo $menuPath; ?>dashboard" data-title="Dashboard">
                 <i class="fas fa-tachometer-alt"></i>
                 <span class="link-text">Dashboard</span>
@@ -345,6 +345,7 @@
                 <span class="link-text">My Profile</span>
             </a>
         </li>
+        
         <li class="<?php echo ($currentPage == 'settings') ? 'active' : ''; ?>">
             <a href="<?php echo $menuPath; ?>settings" data-title="Settings">
                 <i class="fas fa-cog"></i>
