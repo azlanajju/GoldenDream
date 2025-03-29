@@ -19,9 +19,10 @@ $message = '';
 $messageType = '';
 $showNotification = false;
 
-// Add this near the top of your file where you check for directory
-$defaultImagePath = '../../uploads/profile_pictures/image.png';
-$uploadDir = '../../uploads/profile_pictures/';
+// Define upload directory and URL paths
+$defaultImagePath = '../../uploads/profile/image.png';
+$uploadDir = '../../uploads/profile/';
+$uploadUrl = '../../uploads/profile/';
 
 // Create directory if it doesn't exist
 if (!file_exists($uploadDir)) {
@@ -157,11 +158,15 @@ $currentPage = 'profile';
             margin: 40px auto;
             display: grid;
             grid-template-columns: 300px 1fr;
+            grid-template-areas: 
+                "sidebar main"
+                "quick-actions main";
             gap: 30px;
             padding: 0 20px;
         }
 
         .profile-sidebar {
+            grid-area: sidebar;
             background: white;
             border-radius: 20px;
             padding: 30px;
@@ -228,10 +233,12 @@ $currentPage = 'profile';
         }
 
         .main-content {
+            grid-area: main;
             background: white;
             border-radius: 20px;
             padding: 40px;
             box-shadow: var(--card-shadow);
+            grid-row: span 2;
         }
 
         .section-title {
@@ -358,11 +365,77 @@ $currentPage = 'profile';
         @media (max-width: 768px) {
             .profile-container {
                 grid-template-columns: 1fr;
+                grid-template-areas: 
+                    "sidebar"
+                    "quick-actions"
+                    "main";
             }
             
             .form-row {
                 grid-template-columns: 1fr;
             }
+        }
+
+        .quick-actions {
+            grid-area: quick-actions;
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: var(--card-shadow);
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+        }
+
+        .action-btn {
+            padding: 15px;
+            width: 90%;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--bg-light);
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            color: var(--text-primary);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .action-btn:hover {
+            background: var(--primary-light);
+            border-color: var(--primary-color);
+            transform: translateY(-2px);
+        }
+
+        .action-btn i {
+            font-size: 20px;
+            color: var(--primary-color);
+        }
+
+        .kyc-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .kyc-pending {
+            background: rgba(241, 196, 15, 0.1);
+            color: #f1c40f;
+        }
+
+        .kyc-verified {
+            background: rgba(46, 204, 113, 0.1);
+            color: #2ecc71;
+        }
+
+        .kyc-rejected {
+            background: rgba(231, 76, 60, 0.1);
+            color: #e74c3c;
         }
     </style>
 </head>
@@ -374,6 +447,7 @@ $currentPage = 'profile';
         <div class="profile-container">
             <div class="profile-sidebar">
                 <div class="profile-image-container">
+<<<<<<< HEAD
                     <img src=../../uploads/profile_pictures/image.png
                     <?php 
                         // if ($promoter['ProfileImageURL'] && file_exists($uploadDir . $promoter['ProfileImageURL'])) {
@@ -381,6 +455,14 @@ $currentPage = 'profile';
                         // } else {
                         //     echo '../../uploads/profile_pictures/image.png'; // Default image path
                         // }
+=======
+                    <img src="<?php 
+                        if ($promoter['ProfileImageURL'] && file_exists($uploadDir . $promoter['ProfileImageURL'])) {
+                            echo $uploadUrl . $promoter['ProfileImageURL'];
+                        } else {
+                            echo '../../uploads/profile/image.png';
+                        }
+>>>>>>> 16f7c29921087ae3c7a55a2e7f22fd007cacab85
                     ?>" alt="Profile" class="profile-image">
                     <label class="image-upload-label" for="profile_image" title="Change Profile Picture">
                         <i class="fas fa-camera"></i>
@@ -395,6 +477,47 @@ $currentPage = 'profile';
                     <i class="fas fa-id-badge"></i>
                     ID: <?php echo htmlspecialchars($promoter['PromoterUniqueID']); ?>
                 </div>
+                
+            </div>
+
+            <div class="quick-actions">
+                <a href="kyc.php" class="action-btn">
+                    <i class="fas fa-id-card"></i>
+                    <div>
+                        <div>KYC</div>
+                        <?php
+                        // Get KYC status
+                        $kycStmt = $conn->prepare("SELECT Status FROM KYC WHERE UserID = ? AND UserType = 'Promoter' LIMIT 1");
+                        $kycStmt->execute([$_SESSION['promoter_id']]);
+                        $kycStatus = $kycStmt->fetch(PDO::FETCH_COLUMN);
+                        
+                        $statusClass = 'kyc-pending';
+                        if ($kycStatus === 'Verified') {
+                            $statusClass = 'kyc-verified';
+                        } elseif ($kycStatus === 'Rejected') {
+                            $statusClass = 'kyc-rejected';
+                        }
+                        ?>
+                        <span class="kyc-status <?php echo $statusClass; ?>">
+                            <?php echo $kycStatus ? ucfirst($kycStatus) : 'Not Submitted'; ?>
+                        </span>
+                    </div>
+                </a>
+                
+                <a href="change-password.php" class="action-btn">
+                    <i class="fas fa-key"></i>
+                    <div>Change Password</div>
+                </a>
+                
+                <a href="id-card.php" class="action-btn">
+                    <i class="fas fa-address-card"></i>
+                    <div>ID Card</div>
+                </a>
+                
+                <a href="welcome-letter.php" class="action-btn">
+                    <i class="fas fa-envelope-open-text"></i>
+                    <div>Welcome Letter</div>
+                </a>
             </div>
 
             <div class="main-content">
