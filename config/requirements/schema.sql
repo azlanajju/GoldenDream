@@ -204,6 +204,25 @@ CREATE TABLE Teams (
     CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- 12. KYC Table (Stores KYC details for Customers and Promoters)
+CREATE TABLE KYC (
+    KYCID INT AUTO_INCREMENT PRIMARY KEY,
+    UserID INT NOT NULL,
+    UserType ENUM('Customer', 'Promoter') NOT NULL,
+    AadharNumber VARCHAR(20) UNIQUE NOT NULL,
+    PANNumber VARCHAR(10) UNIQUE,
+    IDProofType ENUM('Aadhar', 'PAN', 'Voter ID', 'Passport', 'Driving License') NOT NULL,
+    IDProofImageURL VARCHAR(255) NOT NULL,
+    AddressProofType ENUM('Aadhar', 'Voter ID', 'Utility Bill', 'Bank Statement', 'Ration Card') NOT NULL,
+    AddressProofImageURL VARCHAR(255) NOT NULL,
+    Status ENUM('Pending', 'Verified', 'Rejected') DEFAULT 'Pending',
+    SubmittedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    VerifiedAt TIMESTAMP NULL,
+    AdminID INT DEFAULT NULL,
+    Remarks TEXT,
+    FOREIGN KEY (UserID) REFERENCES Customers(CustomerID) ON DELETE CASCADE,
+    FOREIGN KEY (AdminID) REFERENCES Admins(AdminID) ON DELETE SET NULL
+);
 
 CREATE TABLE Balances (
     BalanceID INT AUTO_INCREMENT PRIMARY KEY,
