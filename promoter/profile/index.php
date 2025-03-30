@@ -447,23 +447,13 @@ $currentPage = 'profile';
         <div class="profile-container">
             <div class="profile-sidebar">
                 <div class="profile-image-container">
-<<<<<<< HEAD
-                    <img src=../../uploads/profile_pictures/image.png
-                    <?php 
-                        // if ($promoter['ProfileImageURL'] && file_exists($uploadDir . $promoter['ProfileImageURL'])) {
-                        //     echo '../../uploads/profile_pictures/image.png';
-                        // } else {
-                        //     echo '../../uploads/profile_pictures/image.png'; // Default image path
-                        // }
-=======
                     <img src="<?php 
                         if ($promoter['ProfileImageURL'] && file_exists($uploadDir . $promoter['ProfileImageURL'])) {
                             echo $uploadUrl . $promoter['ProfileImageURL'];
                         } else {
                             echo '../../uploads/profile/image.png';
                         }
->>>>>>> 16f7c29921087ae3c7a55a2e7f22fd007cacab85
-                    ?>" alt="Profile" class="profile-image">
+                   ?>" alt="Profile" class="profile-image">
                     <label class="image-upload-label" for="profile_image" title="Change Profile Picture">
                         <i class="fas fa-camera"></i>
                     </label>
