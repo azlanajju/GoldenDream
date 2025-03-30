@@ -1,8 +1,8 @@
 <?php
 require_once '../config/config.php';
 require_once '../config/session_check.php';
-$c_path="../";
-$current_page="profile";
+$c_path = "../";
+$current_page = "profile";
 // Get user data and validate session
 $userData = checkSession();
 
@@ -90,6 +90,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->execute([$name, $email, $phone, $address, $profileImageUrl, $userData['customer_id']]);
 
         $success_message = 'Profile updated successfully';
+        header("Location: ./");
 
         // Refresh customer data
         $stmt = $db->prepare("SELECT * FROM Customers WHERE CustomerID = ?");
@@ -111,26 +112,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
+        :root {
+            --dark-bg: #1A1D21;
+            --card-bg: #222529;
+            --accent-green: #2F9B7F;
+            --text-primary: rgba(255, 255, 255, 0.9);
+            --text-secondary: rgba(255, 255, 255, 0.7);
+            --border-color: rgba(255, 255, 255, 0.05);
+        }
+
         body {
-            background: #f8f9fa;
-            padding-top: 60px;
+            background: var(--dark-bg);
+            color: var(--text-primary);
         }
 
         .edit-profile-container {
-            padding: 20px;
+            padding: 24px;
+            margin-top: 70px;
         }
 
         .profile-card {
-            background: white;
-            border-radius: 15px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 24px;
+            border: 1px solid var(--border-color);
         }
 
         .profile-image-container {
             text-align: center;
-            margin-bottom: 20px;
+            margin-bottom: 32px;
         }
 
         .profile-image {
@@ -138,60 +148,92 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             height: 150px;
             border-radius: 50%;
             object-fit: cover;
-            border: 4px solid #4a90e2;
-            margin-bottom: 10px;
-        }
-
-        .image-upload {
-            position: relative;
-            display: inline-block;
-        }
-
-        .image-upload input[type="file"] {
-            display: none;
+            border: 4px solid var(--accent-green);
+            margin-bottom: 16px;
         }
 
         .image-upload label {
-            background: #4a90e2;
+            background: var(--accent-green);
             color: white;
-            padding: 8px 15px;
-            border-radius: 5px;
+            padding: 8px 16px;
+            border-radius: 6px;
             cursor: pointer;
             transition: all 0.3s ease;
+            font-size: 14px;
         }
 
         .image-upload label:hover {
-            background: #357abd;
+            background: #248c6f;
         }
 
         .form-label {
+            color: var(--text-secondary);
+            font-size: 13px;
             font-weight: 500;
-            color: #2c3e50;
+        }
+
+        .form-control {
+            background: var(--dark-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            border-radius: 6px;
+            padding: 10px 12px;
+        }
+
+        .form-control:focus {
+            background: var(--dark-bg);
+            border-color: var(--accent-green);
+            color: var(--text-primary);
+            box-shadow: none;
         }
 
         .btn-save {
-            background: #4a90e2;
+            background: var(--accent-green);
             color: white;
             border: none;
-            padding: 10px 25px;
-            border-radius: 5px;
+            padding: 10px 20px;
+            border-radius: 6px;
             transition: all 0.3s ease;
         }
 
         .btn-save:hover {
-            background: #357abd;
-            color: white;
+            background: #248c6f;
+            transform: translateY(-1px);
         }
 
         .alert {
-            border-radius: 10px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            border-radius: 8px;
+        }
+
+        .alert-success {
+            border-color: var(--accent-green);
+            background: rgba(47, 155, 127, 0.1);
+        }
+
+        .alert-danger {
+            border-color: #FF4C51;
+            background: rgba(255, 76, 81, 0.1);
+        }
+
+        @media (max-width: 768px) {
+            .edit-profile-container {
+                margin-left: 70px;
+                padding: 16px;
+            }
+
+            .profile-card {
+                padding: 16px;
+            }
         }
     </style>
 </head>
 
 <body>
-    <?php include 'c_includes/sidebar.php'; ?>
-    <?php include 'c_includes/topbar.php'; ?>
+    <?php include '../c_includes/sidebar.php'; ?>
+    <?php include '../c_includes/topbar.php'; ?>
 
     <div class="main-content">
         <div class="edit-profile-container">

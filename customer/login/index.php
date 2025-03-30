@@ -17,21 +17,44 @@ if (isLoggedIn()) {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
+        :root {
+            --dark-bg: #1A1D21;
+            --card-bg: #222529;
+            --accent-green: #2F9B7F;
+            --text-primary: rgba(255, 255, 255, 0.9);
+            --text-secondary: rgba(255, 255, 255, 0.7);
+            --border-color: rgba(255, 255, 255, 0.05);
+        }
+
         body {
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            background: linear-gradient(135deg, #1A1D21 0%, #222529 100%);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
+            font-family: 'Inter', sans-serif;
         }
 
         .login-container {
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            background: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
             padding: 40px;
             width: 100%;
             max-width: 400px;
+            border: 1px solid var(--border-color);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .login-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--accent-green), #1e6e59);
         }
 
         .logo {
@@ -40,69 +63,122 @@ if (isLoggedIn()) {
         }
 
         .logo h1 {
-            color: #4a90e2;
+            color: var(--accent-green);
             font-weight: 700;
             margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .logo p {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .form-label {
+            color: var(--text-primary);
+            font-weight: 500;
+            margin-bottom: 8px;
         }
 
         .form-control {
-            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
             padding: 12px;
-            border: 2px solid #e1e1e1;
+            color: var(--text-primary);
             transition: all 0.3s ease;
         }
 
         .form-control:focus {
-            border-color: #4a90e2;
-            box-shadow: 0 0 0 0.2rem rgba(74, 144, 226, 0.25);
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--accent-green);
+            box-shadow: 0 0 0 0.2rem rgba(47, 155, 127, 0.25);
+            color: var(--text-primary);
+        }
+
+        .form-control::placeholder {
+            color: var(--text-secondary);
         }
 
         .btn-login {
-            background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
+            background: linear-gradient(135deg, var(--accent-green) 0%, #1e6e59 100%);
             border: none;
-            border-radius: 10px;
+            border-radius: 8px;
             padding: 12px;
             font-weight: 600;
             transition: all 0.3s ease;
+            color: white;
         }
 
         .btn-login:hover {
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(74, 144, 226, 0.3);
+            box-shadow: 0 5px 15px rgba(47, 155, 127, 0.3);
+            background: linear-gradient(135deg, #248c6f 0%, #1e6e59 100%);
         }
 
         .remember-me {
             display: flex;
             align-items: center;
             gap: 8px;
+            color: var(--text-secondary);
+        }
+
+        .form-check-input {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-color: var(--border-color);
         }
 
         .form-check-input:checked {
-            background-color: #4a90e2;
-            border-color: #4a90e2;
+            background-color: var(--accent-green);
+            border-color: var(--accent-green);
         }
 
         .signup-link {
             text-align: center;
             margin-top: 20px;
+            color: var(--text-secondary);
         }
 
         .signup-link a {
-            color: #4a90e2;
+            color: var(--accent-green);
             text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
         }
 
         .signup-link a:hover {
-            text-decoration: underline;
+            color: #248c6f;
+            text-decoration: none;
         }
 
         .error-message {
-            background: #fee2e2;
-            color: #dc2626;
-            padding: 10px;
-            border-radius: 5px;
+            background: rgba(220, 53, 69, 0.1);
+            color: #dc3545;
+            padding: 12px;
+            border-radius: 8px;
             margin-bottom: 20px;
             display: none;
+            border: 1px solid rgba(220, 53, 69, 0.2);
+        }
+
+        .position-relative i {
+            color: var(--text-secondary);
+            transition: all 0.3s ease;
+        }
+
+        .position-relative i:hover {
+            color: var(--accent-green);
+        }
+
+        @media (max-width: 480px) {
+            .login-container {
+                margin: 20px;
+                padding: 30px 20px;
+            }
+
+            .logo h1 {
+                font-size: 24px;
+            }
         }
     </style>
 </head>
@@ -146,7 +222,7 @@ if (isLoggedIn()) {
         </form>
 
         <div class="signup-link">
-            <p class="mb-0">Don't have an account? <a href="signup.php">Sign up here</a></p>
+            <p class="mb-0">Don't have an account? <a href="../signup/">Sign up here</a></p>
         </div>
     </div>
 

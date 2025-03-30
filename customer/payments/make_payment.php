@@ -1,8 +1,9 @@
 <?php
 require_once '../config/config.php';
 require_once '../config/session_check.php';
-$c_path="../";
-$current_page="payments";
+$c_path = "../";
+$current_page = "payments";
+
 // Get user data and validate session
 $userData = checkSession();
 
@@ -13,104 +14,102 @@ $stmt = $db->prepare("SELECT * FROM Customers WHERE CustomerID = ?");
 $stmt->execute([$userData['customer_id']]);
 $customer = $stmt->fetch(PDO::FETCH_ASSOC);
 
-// Get subscription ID from URL
-$subscription_id = isset($_GET['subscription_id']) ? intval($_GET['subscription_id']) : 0;
-
-// Get subscription details
+// Get active subscriptions with unpaid installments
 $stmt = $db->prepare("
-    SELECT s.*, sch.SchemeName, sch.MonthlyPayment
-    FROM Subscriptions s
-    JOIN Schemes sch ON s.SchemeID = sch.SchemeID
-    WHERE s.SubscriptionID = ? AND s.CustomerID = ? AND s.RenewalStatus = 'Active'
+    SELECT 
+        s.SchemeID,
+        s.SchemeName,
+        s.MonthlyPayment,
+        i.InstallmentID,
+        i.InstallmentNumber,
+        i.Amount,
+        i.DrawDate,
+        sub.StartDate,
+        sub.EndDate
+    FROM Subscriptions sub
+    JOIN Schemes s ON sub.SchemeID = s.SchemeID
+    JOIN Installments i ON s.SchemeID = i.SchemeID
+    LEFT JOIN Payments p ON i.InstallmentID = p.InstallmentID 
+        AND p.CustomerID = sub.CustomerID
+    WHERE sub.CustomerID = ? 
+    AND sub.RenewalStatus = 'Active'
+    AND (p.PaymentID IS NULL OR p.Status = 'Rejected')
+    ORDER BY i.DrawDate ASC
 ");
-$stmt->execute([$subscription_id, $userData['customer_id']]);
-$subscription = $stmt->fetch(PDO::FETCH_ASSOC);
+$stmt->execute([$userData['customer_id']]);
+$unpaid_installments = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-if (!$subscription) {
-    header("Location: subscriptions.php");
-    exit;
+// Group installments by scheme and sort by draw date
+$schemes = [];
+foreach ($unpaid_installments as $installment) {
+    if (!isset($schemes[$installment['SchemeID']])) {
+        $schemes[$installment['SchemeID']] = [
+            'SchemeID' => $installment['SchemeID'],
+            'SchemeName' => $installment['SchemeName'],
+            'MonthlyPayment' => $installment['MonthlyPayment'],
+            'installments' => []
+        ];
+    }
+    $schemes[$installment['SchemeID']]['installments'][] = $installment;
 }
 
-// Get payment QR details
-$stmt = $db->prepare("SELECT * FROM PaymentQR WHERE CustomerID = ?");
-$stmt->execute([$userData['customer_id']]);
-$payment_qr = $stmt->fetch(PDO::FETCH_ASSOC);
+// Sort installments by draw date for each scheme
+foreach ($schemes as &$scheme) {
+    usort($scheme['installments'], function ($a, $b) {
+        return strtotime($a['DrawDate']) - strtotime($b['DrawDate']);
+    });
+}
+
+// Get the scheme with the earliest unpaid installment
+$selectedSchemeId = null;
+$earliestDate = null;
+foreach ($schemes as $schemeId => $scheme) {
+    if (empty($scheme['installments'])) continue;
+
+    $installmentDate = strtotime($scheme['installments'][0]['DrawDate']);
+    if ($earliestDate === null || $installmentDate < $earliestDate) {
+        $earliestDate = $installmentDate;
+        $selectedSchemeId = $schemeId;
+    }
+}
 
 // Handle form submission
-$success_message = '';
-$error_message = '';
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $amount = floatval($_POST['amount']);
-    $payment_code = intval($_POST['payment_code']);
+    $installmentId = isset($_POST['installment_id']) ? (int)$_POST['installment_id'] : 0;
+    $amount = isset($_POST['amount']) ? (float)$_POST['amount'] : 0;
+    $screenshot = isset($_FILES['screenshot']) ? $_FILES['screenshot'] : null;
 
-    // Validate amount
-    if ($amount <= 0) {
-        $error_message = "Please enter a valid amount.";
-    } elseif ($amount != $subscription['MonthlyPayment']) {
-        $error_message = "Amount must match the monthly payment of ₹" . number_format($subscription['MonthlyPayment'], 2);
-    } else {
+    if ($installmentId && $amount && $screenshot) {
         // Handle file upload
-        $screenshot = $_FILES['screenshot'];
-        $allowed_types = ['image/jpeg', 'image/png', 'image/jpg'];
-        $max_size = 5 * 1024 * 1024; // 5MB
+        $uploadDir = '../../uploads/payments/';
+        if (!file_exists($uploadDir)) {
+            mkdir($uploadDir, 0777, true);
+        }
 
-        if (!in_array($screenshot['type'], $allowed_types)) {
-            $error_message = "Invalid file type. Please upload JPG or PNG image.";
-        } elseif ($screenshot['size'] > $max_size) {
-            $error_message = "File size too large. Maximum size is 5MB.";
-        } else {
-            try {
-                // Start transaction
-                $db->beginTransaction();
+        $fileExtension = strtolower(pathinfo($screenshot['name'], PATHINFO_EXTENSION));
+        $fileName = uniqid() . '.' . $fileExtension;
+        $targetPath = $uploadDir . $fileName;
 
-                // Create upload directory if it doesn't exist
-                $upload_dir = 'uploads/payments/';
-                if (!file_exists($upload_dir)) {
-                    mkdir($upload_dir, 0777, true);
-                }
+        if (move_uploaded_file($screenshot['tmp_name'], $targetPath)) {
+            // Insert payment record
+            $stmt = $db->prepare("
+                INSERT INTO Payments (
+                    CustomerID, SchemeID, InstallmentID, Amount, 
+                    ScreenshotURL, Status, SubmittedAt
+                ) VALUES (?, ?, ?, ?, ?, 'Pending', NOW())
+            ");
 
-                // Generate unique filename
-                $file_extension = pathinfo($screenshot['name'], PATHINFO_EXTENSION);
-                $filename = 'payment_' . $userData['customer_id'] . '_' . time() . '.' . $file_extension;
-                $filepath = $upload_dir . $filename;
+            $screenshotUrl = 'uploads/payments/' . $fileName;
+            $stmt->execute([
+                $userData['customer_id'],
+                $_POST['scheme_id'],
+                $installmentId,
+                $amount,
+                $screenshotUrl
+            ]);
 
-                // Move uploaded file
-                if (move_uploaded_file($screenshot['tmp_name'], $filepath)) {
-                    // Insert payment record
-                    $stmt = $db->prepare("
-                        INSERT INTO Payments (CustomerID, SchemeID, Amount, PaymentCodeValue, ScreenshotURL, Status)
-                        VALUES (?, ?, ?, ?, ?, 'Pending')
-                    ");
-                    $stmt->execute([
-                        $userData['customer_id'],
-                        $subscription['SchemeID'],
-                        $amount,
-                        $payment_code,
-                        $filepath
-                    ]);
-
-                    // Create notification for admin
-                    $stmt = $db->prepare("
-                        INSERT INTO Notifications (UserID, UserType, Message)
-                        SELECT AdminID, 'Admin', CONCAT('New payment of ₹', ?, ' from ', ?)
-                        FROM Admins
-                        WHERE Role = 'SuperAdmin'
-                    ");
-                    $stmt->execute([$amount, $customer['Name']]);
-
-                    // Commit transaction
-                    $db->commit();
-
-                    $success_message = "Payment submitted successfully! Please wait for admin verification.";
-                } else {
-                    throw new Exception("Failed to upload file.");
-                }
-            } catch (Exception $e) {
-                // Rollback transaction on error
-                $db->rollBack();
-                $error_message = "An error occurred. Please try again.";
-            }
+            header('Location: index.php');
+            exit;
         }
     }
 }
@@ -126,128 +125,172 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
+        :root {
+            --dark-bg: #1A1D21;
+            --card-bg: #222529;
+            --accent-green: #2F9B7F;
+            --text-primary: rgba(255, 255, 255, 0.9);
+            --text-secondary: rgba(255, 255, 255, 0.7);
+            --border-color: rgba(255, 255, 255, 0.05);
+        }
+
         body {
-            background: #f8f9fa;
-            padding-top: 60px;
+            background: var(--dark-bg);
+            color: var(--text-primary);
+            min-height: 100vh;
+            margin: 0;
+            font-family: 'Inter', sans-serif;
         }
 
         .payment-container {
-            padding: 20px;
+            padding: 24px;
+            margin-top: 70px;
         }
 
         .payment-header {
-            background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
-            color: white;
-            border-radius: 15px;
-            padding: 30px;
-            margin-bottom: 30px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-
-        .payment-card {
-            background: white;
-            border-radius: 15px;
-            padding: 30px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-        }
-
-        .qr-section {
+            background: linear-gradient(135deg, #2F9B7F 0%, #1e6e59 100%);
+            border-radius: 12px;
+            padding: 40px 24px;
+            margin-bottom: 24px;
+            position: relative;
+            overflow: hidden;
             text-align: center;
-            padding: 20px;
-            background: #f8f9fa;
-            border-radius: 10px;
-            margin-bottom: 20px;
         }
 
-        .qr-image {
-            max-width: 200px;
-            margin-bottom: 15px;
+        .payment-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 100%);
         }
 
-        .bank-details {
-            background: #f8f9fa;
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 20px;
+        .payment-header h2 {
+            color: #fff;
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            position: relative;
         }
 
-        .bank-detail-item {
-            margin-bottom: 10px;
-        }
-
-        .bank-detail-label {
-            font-weight: 500;
-            color: #6c757d;
-        }
-
-        .bank-detail-value {
-            color: #2c3e50;
+        .payment-header p {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 16px;
+            margin: 0;
+            position: relative;
         }
 
         .payment-form {
-            background: white;
-            border-radius: 15px;
-            padding: 30px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 24px;
+            border: 1px solid var(--border-color);
         }
 
         .form-label {
+            color: var(--text-primary);
             font-weight: 500;
-            color: #2c3e50;
+            margin-bottom: 8px;
         }
 
         .form-control {
-            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
             padding: 12px;
-            border: 1px solid #dee2e6;
+            border-radius: 6px;
         }
 
         .form-control:focus {
-            border-color: #4a90e2;
-            box-shadow: 0 0 0 0.2rem rgba(74, 144, 226, 0.25);
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--accent-green);
+            color: var(--text-primary);
+            box-shadow: none;
+        }
+
+        .form-select {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 12px;
+            border-radius: 6px;
+        }
+
+        .form-select:focus {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--accent-green);
+            color: var(--text-primary);
+            box-shadow: none;
         }
 
         .btn-submit {
-            background: #28a745;
+            background: var(--accent-green);
             color: white;
             border: none;
-            padding: 12px 30px;
-            border-radius: 8px;
+            padding: 12px 24px;
+            border-radius: 6px;
             font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
             transition: all 0.3s ease;
         }
 
         .btn-submit:hover {
-            background: #218838;
-            color: white;
+            background: #248c6f;
+            transform: translateY(-2px);
         }
 
-        .btn-cancel {
-            background: #6c757d;
-            color: white;
-            border: none;
-            padding: 12px 30px;
-            border-radius: 8px;
+        .btn-back {
+            background: rgba(47, 155, 127, 0.1);
+            color: var(--accent-green);
+            border: 1px solid var(--accent-green);
+            padding: 12px 24px;
+            border-radius: 6px;
             font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
             transition: all 0.3s ease;
         }
 
-        .btn-cancel:hover {
-            background: #5a6268;
+        .btn-back:hover {
+            background: var(--accent-green);
             color: white;
         }
 
-        .alert {
+        .installment-info {
+            background: rgba(47, 155, 127, 0.1);
             border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 20px;
+            padding: 16px;
+            margin-top: 16px;
+            border: 1px solid var(--border-color);
         }
 
-        .preview-image {
-            max-width: 200px;
-            margin-top: 10px;
-            display: none;
+        .installment-info p {
+            margin: 0;
+            color: var(--text-secondary);
+        }
+
+        .installment-info strong {
+            color: var(--text-primary);
+        }
+
+        @media (max-width: 768px) {
+            .payment-container {
+                margin-left: 70px;
+                padding: 16px;
+            }
+
+            .payment-header {
+                padding: 30px 20px;
+            }
+
+            .payment-form {
+                padding: 20px;
+            }
         }
     </style>
 </head>
@@ -259,149 +302,134 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="main-content">
         <div class="payment-container">
             <div class="container">
-                <div class="payment-header text-center">
+                <div class="payment-header">
                     <h2><i class="fas fa-money-bill-wave"></i> Make Payment</h2>
-                    <p class="mb-0">Submit your monthly payment for <?php echo htmlspecialchars($subscription['SchemeName']); ?></p>
+                    <p class="mb-0">Select a scheme and installment to make payment</p>
                 </div>
 
-                <?php if ($success_message): ?>
-                    <div class="alert alert-success">
-                        <i class="fas fa-check-circle"></i> <?php echo $success_message; ?>
+                <?php if (empty($schemes)): ?>
+                    <div class="text-center">
+                        <p class="text-secondary">No unpaid installments found.</p>
+                        <a href="index.php" class="btn btn-back">
+                            <i class="fas fa-arrow-left"></i> Back to Payments
+                        </a>
                     </div>
-                <?php endif; ?>
-
-                <?php if ($error_message): ?>
-                    <div class="alert alert-danger">
-                        <i class="fas fa-exclamation-circle"></i> <?php echo $error_message; ?>
-                    </div>
-                <?php endif; ?>
-
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="payment-card">
-                            <h4 class="mb-4">Payment Details</h4>
+                <?php else: ?>
+                    <div class="payment-form">
+                        <form method="POST" enctype="multipart/form-data">
                             <div class="mb-4">
-                                <div class="bank-detail-item">
-                                    <div class="bank-detail-label">Scheme Name</div>
-                                    <div class="bank-detail-value"><?php echo htmlspecialchars($subscription['SchemeName']); ?></div>
-                                </div>
-                                <div class="bank-detail-item">
-                                    <div class="bank-detail-label">Monthly Payment</div>
-                                    <div class="bank-detail-value">₹<?php echo number_format($subscription['MonthlyPayment'], 2); ?></div>
-                                </div>
-                                <div class="bank-detail-item">
-                                    <div class="bank-detail-label">Payment Due Date</div>
-                                    <div class="bank-detail-value"><?php echo date('M d, Y', strtotime($subscription['StartDate'])); ?></div>
-                                </div>
+                                <label class="form-label">Select Scheme</label>
+                                <select class="form-select" id="schemeSelect" name="scheme_id" required>
+                                    <option value="">Choose a scheme</option>
+                                    <?php foreach ($schemes as $scheme): ?>
+                                        <option value="<?php echo $scheme['SchemeID']; ?>"
+                                            <?php echo $scheme['SchemeID'] == $selectedSchemeId ? 'selected' : ''; ?>>
+                                            <?php echo htmlspecialchars($scheme['SchemeName']); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
                             </div>
 
-                            <?php if ($payment_qr): ?>
-                                <div class="qr-section">
-                                    <h5 class="mb-3">Scan QR Code to Pay</h5>
-                                    <img src="<?php echo htmlspecialchars($payment_qr['UPIQRImageURL']); ?>"
-                                        alt="Payment QR Code"
-                                        class="qr-image">
-                                    <p class="text-muted">Scan this QR code using any UPI payment app</p>
-                                </div>
-                            <?php endif; ?>
-
-                            <div class="bank-details">
-                                <h5 class="mb-3">Bank Details</h5>
-                                <div class="bank-detail-item">
-                                    <div class="bank-detail-label">Account Name</div>
-                                    <div class="bank-detail-value"><?php echo htmlspecialchars($customer['BankAccountName']); ?></div>
-                                </div>
-                                <div class="bank-detail-item">
-                                    <div class="bank-detail-label">Account Number</div>
-                                    <div class="bank-detail-value"><?php echo htmlspecialchars($customer['BankAccountNumber']); ?></div>
-                                </div>
-                                <div class="bank-detail-item">
-                                    <div class="bank-detail-label">IFSC Code</div>
-                                    <div class="bank-detail-value"><?php echo htmlspecialchars($customer['IFSCCode']); ?></div>
-                                </div>
-                                <div class="bank-detail-item">
-                                    <div class="bank-detail-label">Bank Name</div>
-                                    <div class="bank-detail-value"><?php echo htmlspecialchars($customer['BankName']); ?></div>
-                                </div>
+                            <div class="mb-4">
+                                <label class="form-label">Select Installment</label>
+                                <select class="form-select" id="installmentSelect" name="installment_id" required>
+                                    <option value="">Choose an installment</option>
+                                </select>
                             </div>
-                        </div>
+
+                            <div class="installment-info" id="installmentInfo" style="display: none;">
+                                <p><strong>Amount:</strong> <span id="installmentAmount"></span></p>
+                                <p><strong>Draw Date:</strong> <span id="installmentDrawDate"></span></p>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="form-label">Payment Amount</label>
+                                <input type="number" class="form-control" name="amount" id="paymentAmount" required>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="form-label">Payment Screenshot</label>
+                                <input type="file" class="form-control" name="screenshot" accept="image/*" required>
+                            </div>
+
+                            <div class="d-flex gap-3">
+                                <button type="submit" class="btn btn-submit">
+                                    <i class="fas fa-check"></i> Submit Payment
+                                </button>
+                                <a href="index.php" class="btn btn-back">
+                                    <i class="fas fa-arrow-left"></i> Back to Payments
+                                </a>
+                            </div>
+                        </form>
                     </div>
-
-                    <div class="col-md-6">
-                        <div class="payment-form">
-                            <h4 class="mb-4">Submit Payment</h4>
-                            <form method="POST" action="" enctype="multipart/form-data">
-                                <div class="mb-4">
-                                    <label for="amount" class="form-label">Payment Amount</label>
-                                    <div class="input-group">
-                                        <span class="input-group-text">₹</span>
-                                        <input type="number"
-                                            class="form-control"
-                                            id="amount"
-                                            name="amount"
-                                            value="<?php echo $subscription['MonthlyPayment']; ?>"
-                                            readonly>
-                                    </div>
-                                </div>
-
-                                <div class="mb-4">
-                                    <label for="payment_code" class="form-label">Payment Code</label>
-                                    <input type="number"
-                                        class="form-control"
-                                        id="payment_code"
-                                        name="payment_code"
-                                        required>
-                                    <div class="form-text">
-                                        Enter the payment code shown in your payment app
-                                    </div>
-                                </div>
-
-                                <div class="mb-4">
-                                    <label for="screenshot" class="form-label">Payment Screenshot</label>
-                                    <input type="file"
-                                        class="form-control"
-                                        id="screenshot"
-                                        name="screenshot"
-                                        accept="image/jpeg,image/png"
-                                        required>
-                                    <div class="form-text">
-                                        Upload a screenshot of your payment confirmation
-                                    </div>
-                                    <img id="preview" class="preview-image">
-                                </div>
-
-                                <div class="d-flex gap-3">
-                                    <button type="submit" class="btn btn-submit">
-                                        <i class="fas fa-paper-plane"></i> Submit Payment
-                                    </button>
-                                    <a href="subscriptions.php" class="btn btn-cancel">
-                                        <i class="fas fa-times"></i> Cancel
-                                    </a>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
+                <?php endif; ?>
             </div>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Preview uploaded image
-        document.getElementById('screenshot').addEventListener('change', function(e) {
-            const preview = document.getElementById('preview');
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    preview.src = e.target.result;
-                    preview.style.display = 'block';
+        const schemes = <?php echo json_encode($schemes); ?>;
+        const schemeSelect = document.getElementById('schemeSelect');
+        const installmentSelect = document.getElementById('installmentSelect');
+        const installmentInfo = document.getElementById('installmentInfo');
+        const installmentAmount = document.getElementById('installmentAmount');
+        const installmentDrawDate = document.getElementById('installmentDrawDate');
+        const paymentAmount = document.getElementById('paymentAmount');
+
+        function updateInstallments(schemeId) {
+            installmentSelect.innerHTML = '<option value="">Choose an installment</option>';
+            installmentInfo.style.display = 'none';
+            paymentAmount.value = '';
+
+            if (schemeId && schemes[schemeId]) {
+                schemes[schemeId].installments.forEach(installment => {
+                    const option = document.createElement('option');
+                    option.value = installment.InstallmentID;
+                    option.textContent = `Installment ${installment.InstallmentNumber} (Due: ${new Date(installment.DrawDate).toLocaleDateString()})`;
+                    installmentSelect.appendChild(option);
+                });
+
+                // Automatically select the first (earliest) installment
+                if (schemes[schemeId].installments.length > 0) {
+                    const firstInstallment = schemes[schemeId].installments[0];
+                    installmentSelect.value = firstInstallment.InstallmentID;
+                    installmentAmount.textContent = `₹${parseFloat(firstInstallment.Amount).toFixed(2)}`;
+                    installmentDrawDate.textContent = new Date(firstInstallment.DrawDate).toLocaleDateString();
+                    paymentAmount.value = firstInstallment.Amount;
+                    installmentInfo.style.display = 'block';
                 }
-                reader.readAsDataURL(file);
+            }
+        }
+
+        // Initial load of installments for selected scheme
+        if (schemeSelect.value) {
+            updateInstallments(schemeSelect.value);
+        }
+
+        schemeSelect.addEventListener('change', function() {
+            updateInstallments(this.value);
+        });
+
+        installmentSelect.addEventListener('change', function() {
+            const schemeId = schemeSelect.value;
+            const installmentId = this.value;
+
+            if (schemeId && installmentId && schemes[schemeId]) {
+                const installment = schemes[schemeId].installments.find(i => i.InstallmentID == installmentId);
+                if (installment) {
+                    installmentAmount.textContent = `₹${parseFloat(installment.Amount).toFixed(2)}`;
+                    installmentDrawDate.textContent = new Date(installment.DrawDate).toLocaleDateString();
+                    paymentAmount.value = installment.Amount;
+                    installmentInfo.style.display = 'block';
+                }
+            } else {
+                installmentInfo.style.display = 'none';
+                paymentAmount.value = '';
             }
         });
     </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 
 </html>

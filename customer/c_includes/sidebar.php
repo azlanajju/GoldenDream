@@ -71,9 +71,9 @@
         </li>
 
         <li class="nav-item">
-            <a class="nav-link" href="<?php echo $c_path; ?>side-logout">
+            <a class="nav-link" href="<?php echo $c_path; ?>logout">
                 <i class="fas fa-sign-out-alt"></i>
-                <span>side-logout</span>
+                <span>logout</span>
             </a>
         </li>
     </ul>
@@ -99,7 +99,8 @@
         padding: 20px;
         text-align: center;
         background: #1A1D21;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        /* border-bottom: 1px solid rgba(255, 255, 255, 0.05); */
+        height: 70px;
     }
 
     .sidebar-header .side-logo h3 {

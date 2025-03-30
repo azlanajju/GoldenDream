@@ -2,7 +2,7 @@
 require_once '../config/config.php';
 require_once '../config/session_check.php';
 $c_path = "../";
-$current_page = "schemes";
+$current_page = "subscriptions";
 // Get user data and validate session
 $userData = checkSession();
 
@@ -31,13 +31,20 @@ if (!$scheme) {
     exit;
 }
 
-// Get installments for this scheme
+// Get installments for this scheme with payment status
 $stmt = $db->prepare("
-    SELECT * FROM Installments 
-    WHERE SchemeID = ? AND Status = 'Active'
-    ORDER BY InstallmentNumber ASC
+    SELECT 
+        i.*,
+        p.Status as PaymentStatus,
+        p.SubmittedAt as PaymentDate,
+        p.VerifiedAt as VerificationDate
+    FROM Installments i
+    LEFT JOIN Payments p ON i.InstallmentID = p.InstallmentID 
+        AND p.CustomerID = ? AND p.SchemeID = ?
+    WHERE i.SchemeID = ? AND i.Status = 'Active'
+    ORDER BY i.InstallmentNumber ASC
 ");
-$stmt->execute([$schemeId]);
+$stmt->execute([$userData['customer_id'], $schemeId, $schemeId]);
 $installments = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
@@ -319,11 +326,40 @@ $installments = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                 <div class="installment-number">
                                     <i class="fas fa-flag"></i>
                                     Installment <?php echo $installment['InstallmentNumber']; ?>
+                                    <?php
+                                    $statusClass = '';
+                                    $statusText = '';
+                                    $statusIcon = '';
+
+                                    if ($installment['PaymentStatus'] === 'Verified') {
+                                        $statusClass = 'text-success';
+                                        $statusText = 'Paid';
+                                        $statusIcon = 'fa-check-circle';
+                                    } elseif ($installment['PaymentStatus'] === 'Pending') {
+                                        $statusClass = 'text-warning';
+                                        $statusText = 'Pending Verification';
+                                        $statusIcon = 'fa-clock';
+                                    } else {
+                                        $statusClass = 'text-secondary';
+                                        $statusText = 'Not Paid';
+                                        $statusIcon = 'fa-times-circle';
+                                    }
+                                    ?>
+                                    <span class="payment-status ms-2 <?php echo $statusClass; ?>">
+                                        <i class="fas <?php echo $statusIcon; ?>"></i>
+                                        <?php echo $statusText; ?>
+                                    </span>
                                 </div>
 
                                 <div class="draw-date">
                                     <i class="fas fa-calendar"></i>
                                     Draw Date: <?php echo date('M d, Y', strtotime($installment['DrawDate'])); ?>
+                                    <?php if ($installment['PaymentStatus'] === 'Verified'): ?>
+                                        <span class="payment-date ms-2">
+                                            <i class="fas fa-check text-success"></i>
+                                            Paid on: <?php echo date('M d, Y', strtotime($installment['VerificationDate'])); ?>
+                                        </span>
+                                    <?php endif; ?>
                                 </div>
 
                                 <div class="amount">

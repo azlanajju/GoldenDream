@@ -1,8 +1,8 @@
 <?php
 require_once '../config/config.php';
 require_once '../config/session_check.php';
-$c_path="../";
-$current_page="profile";
+$c_path = "../";
+$current_page = "profile";
 // Get user data and validate session
 $userData = checkSession();
 
@@ -24,111 +24,257 @@ $customer = $stmt->fetch(PDO::FETCH_ASSOC);
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
+        :root {
+            --dark-bg: #1A1D21;
+            --card-bg: #222529;
+            --accent-green: #2F9B7F;
+            --text-primary: rgba(255, 255, 255, 0.9);
+            --text-secondary: rgba(255, 255, 255, 0.7);
+            --card-hover: #2A2D31;
+            --border-color: rgba(255, 255, 255, 0.05);
+        }
+
         body {
-            background: #f8f9fa;
-            padding-top: 60px;
+            background: var(--dark-bg);
+            color: var(--text-primary);
+            min-height: 100vh;
+            margin: 0;
+            font-family: 'Inter', sans-serif;
         }
 
         .profile-container {
-            padding: 20px;
+            padding: 24px;
+            margin-top: 10px;
         }
 
         .profile-header {
-            background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
-            color: white;
-            border-radius: 15px;
-            padding: 30px;
-            margin-bottom: 30px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            background: linear-gradient(135deg, #2F9B7F 0%, #1e6e59 100%);
+            border-radius: 12px;
+            padding: 40px;
+            margin-bottom: 24px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .profile-header-content {
+            display: flex;
+            align-items: center;
+            gap: 30px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .profile-avatar-wrapper {
+            flex-shrink: 0;
         }
 
         .profile-avatar {
             width: 120px;
             height: 120px;
             border-radius: 50%;
-            border: 4px solid white;
+            border: 4px solid rgba(255, 255, 255, 0.2);
             object-fit: cover;
-            margin-bottom: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .profile-info {
+            flex-grow: 1;
+            text-align: left;
+        }
+
+        .profile-info h2 {
+            color: #fff;
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .profile-info p {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 16px;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .profile-status {
+            margin-top: 12px;
+            display: inline-block;
+        }
+
+        .profile-actions {
+            margin-left: auto;
+            flex-shrink: 0;
         }
 
         .profile-card {
-            background: white;
-            border-radius: 15px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
         }
 
-        .profile-section {
-            margin-bottom: 30px;
+        .profile-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
         }
 
         .profile-section h4 {
-            color: #2c3e50;
+            color: var(--text-primary);
+            font-size: 16px;
             margin-bottom: 20px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .profile-section h4 i {
+            color: var(--accent-green);
         }
 
         .info-label {
-            color: #6c757d;
+            color: var(--text-secondary);
+            font-size: 13px;
             font-weight: 500;
+            margin-bottom: 4px;
         }
 
         .info-value {
-            color: #2c3e50;
-            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 15px;
+            font-weight: 500;
         }
 
         .btn-edit {
-            background: #4a90e2;
+            background: var(--accent-green);
             color: white;
             border: none;
-            padding: 8px 20px;
-            border-radius: 5px;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 14px;
             transition: all 0.3s ease;
         }
 
         .btn-edit:hover {
-            background: #357abd;
-            color: white;
+            background: #248c6f;
+            transform: translateY(-1px);
         }
 
         .status-badge {
-            padding: 5px 10px;
-            border-radius: 20px;
-            font-size: 0.8rem;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
         }
 
         .status-active {
-            background: #e3fcef;
-            color: #00a854;
+            background: rgba(47, 155, 127, 0.1);
+            color: #2F9B7F;
         }
 
         .status-inactive {
-            background: #fff1f0;
-            color: #f5222d;
+            background: rgba(255, 76, 81, 0.1);
+            color: #FF4C51;
         }
 
         .status-suspended {
-            background: #fff7e6;
-            color: #fa8c16;
+            background: rgba(255, 152, 0, 0.1);
+            color: #FF9800;
+        }
+
+        .btn-outline-primary {
+            border: 1px solid var(--accent-green);
+            color: var(--accent-green);
+            background: transparent;
+            padding: 8px 16px;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-outline-primary:hover {
+            background: var(--accent-green);
+            color: white;
+        }
+
+        @media (max-width: 768px) {
+            .profile-container {
+                margin-left: 70px;
+                padding: 16px;
+            }
+
+            .profile-header {
+                padding: 24px;
+            }
+
+            .profile-header-content {
+                flex-direction: column;
+                text-align: center;
+                gap: 20px;
+            }
+
+            .profile-info {
+                text-align: center;
+            }
+
+            .profile-actions {
+                margin-left: 0;
+                width: 100%;
+                display: flex;
+                justify-content: center;
+            }
+
+            .profile-avatar {
+                width: 100px;
+                height: 100px;
+            }
+
+            .profile-card {
+                padding: 16px;
+            }
         }
     </style>
 </head>
 
 <body>
     <?php include '../c_includes/sidebar.php'; ?>
-    <?php include '../c_includes/topbar.php'; ?>
 
     <div class="main-content">
         <div class="profile-container">
             <div class="container">
-                <div class="profile-header text-center">
-                    <img src="<?php echo $customer['ProfileImageURL'] ?: 'assets/images/default-avatar.png'; ?>"
-                        alt="Profile" class="profile-avatar">
-                    <h2><?php echo htmlspecialchars($customer['Name']); ?></h2>
-                    <p class="mb-0"><?php echo htmlspecialchars($customer['CustomerUniqueID']); ?></p>
+                <div class="profile-header">
+                    <div class="profile-header-content">
+                        <div class="profile-avatar-wrapper">
+                            <img src="<?php echo $customer['ProfileImageURL'] ?: 'assets/images/default-avatar.png'; ?>"
+                                alt="Profile" class="profile-avatar">
+                        </div>
+                        <div class="profile-info">
+                            <h2><?php echo htmlspecialchars($customer['Name']); ?></h2>
+                            <p>
+                                <i class="fas fa-id-card"></i>
+                                <?php echo htmlspecialchars($customer['CustomerUniqueID']); ?>
+                            </p>
+                            <p>
+                                <i class="fas fa-phone"></i>
+                                <?php echo htmlspecialchars($customer['Contact']); ?>
+                            </p>
+                            <div class="profile-status">
+                                <span class="status-badge status-<?php echo strtolower($customer['Status']); ?>">
+                                    <i class="fas fa-circle me-1"></i>
+                                    <?php echo htmlspecialchars($customer['Status']); ?>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="profile-actions">
+                            <a href="edit_profile.php" class="btn btn-edit">
+                                <i class="fas fa-edit"></i> Edit Profile
+                            </a>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="row">
@@ -137,9 +283,9 @@ $customer = $stmt->fetch(PDO::FETCH_ASSOC);
                         <div class="profile-card">
                             <div class="d-flex justify-content-between align-items-center mb-3">
                                 <h4><i class="fas fa-user"></i> Personal Information</h4>
-                                <a href="edit_profile.php" class="btn btn-edit">
+                                <!-- <a href="edit_profile.php" class="btn btn-edit">
                                     <i class="fas fa-edit"></i> Edit Profile
-                                </a>
+                                </a> -->
                             </div>
                             <div class="row">
                                 <div class="col-md-6 mb-3">
@@ -197,27 +343,43 @@ $customer = $stmt->fetch(PDO::FETCH_ASSOC);
                     <div class="col-md-4">
                         <!-- Account Security -->
                         <div class="profile-card">
-                            <h4><i class="fas fa-shield-alt"></i> Account Security</h4>
-                            <div class="d-grid gap-2">
-                                <a href="change_password.php" class="btn btn-outline-primary">
-                                    <i class="fas fa-key"></i> Change Password
-                                </a>
-                                <a href="two_factor.php" class="btn btn-outline-primary">
-                                    <i class="fas fa-lock"></i> Two-Factor Authentication
-                                </a>
+                            <h4><i class="fas fa-shield-alt"></i> Account Security</h4> <br>
+                            <div class="row g-3 center">
+                                <div class="col-md-8">
+                                    <a href="change_password.php" class="btn btn-outline-primary w-100">
+                                        <i class="fas fa-key me-2"></i> Change Password
+                                    </a>
+                                </div>
+                                <!-- <div class="col-md-6">
+                                    <a href="two_factor.php" class="btn btn-outline-primary w-100">
+                                        <i class="fas fa-lock me-2"></i> Two-Factor Authentication
+                                    </a>
+                                </div> -->
                             </div>
                         </div>
 
                         <!-- Account Activity -->
                         <div class="profile-card">
                             <h4><i class="fas fa-history"></i> Account Activity</h4>
-                            <div class="mb-3">
-                                <div class="info-label">Member Since</div>
-                                <div class="info-value"><?php echo date('M d, Y', strtotime($customer['CreatedAt'])); ?></div>
-                            </div>
-                            <div class="mb-3">
-                                <div class="info-label">Last Updated</div>
-                                <div class="info-value"><?php echo date('M d, Y', strtotime($customer['UpdatedAt'])); ?></div>
+                            <div class="row g-4">
+                                <div class="col-md-6">
+                                    <div class="activity-item">
+                                        <div class="info-label">Member Since</div>
+                                        <div class="info-value">
+                                            <i class="fas fa-calendar-alt me-2 text-muted"></i>
+                                            <?php echo date('M d, Y', strtotime($customer['CreatedAt'])); ?>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="activity-item">
+                                        <div class="info-label">Last Updated</div>
+                                        <div class="info-value">
+                                            <i class="fas fa-clock me-2 text-muted"></i>
+                                            <?php echo date('M d, Y', strtotime($customer['UpdatedAt'])); ?>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
