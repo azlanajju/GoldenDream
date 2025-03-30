@@ -6,15 +6,23 @@ if (!$userData) {
     exit;
 }
 
+// Get customer data with profile image
+$top_statementdatabase = new database();
+$top_statementdb = $top_statementdatabase->getConnection();
+$top_statement = $top_statementdb->prepare("SELECT ProfileImageURL FROM Customers WHERE CustomerID = ?");
+$top_statement->execute([$userData['customer_id']]);
+$customer = $top_statement->fetch(PDO::FETCH_ASSOC);
+
 // Get unread notifications count
-$database = new Database();
-$db = $database->getConnection();
-$stmt = $db->prepare("SELECT COUNT(*) as count FROM Notifications WHERE UserID = ? AND UserType = 'Customer' AND IsRead = 0");
-$stmt->execute([$userData['customer_id']]);
-$notificationCount = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
+$top_statement = $top_statementdb->prepare("SELECT COUNT(*) as count FROM Notifications WHERE UserID = ? AND UserType = 'Customer' AND IsRead = 0");
+$top_statement->execute([$userData['customer_id']]);
+$notificationCount = $top_statement->fetch(PDO::FETCH_ASSOC)['count'];
 
 // Get current page name for active state
 $current_page = basename($_SERVER['PHP_SELF']);
+
+// Set default avatar if no profile image
+$profileImage = $customer['ProfileImageURL'] ? $customer['ProfileImageURL'] : 'assets/images/default-avatar.png';
 ?>
 
 <nav class="topbar">
@@ -28,8 +36,8 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 <?php endif; ?>
             </div>
             <div class="user-profile" data-bs-toggle="dropdown" aria-expanded="false">
-                <img src="assets/images/default-avatar.png" alt="User Avatar" class="user-avatar">
-                <span class="user-name"><?php echo htmlspecialchars($userData['customer_name']); ?></span>
+                <img src="../profile/<?php echo htmlspecialchars($profileImage); ?>" alt="User Avatar" class="user-avatar" onerror="this.src='assets/images/default-avatar.png'">
+                <span class="user-name"> <?php echo htmlspecialchars($userData['customer_name']); ?></span>
             </div>
             <ul class="dropdown-menu">
                 <li><a class="dropdown-item" href="profile.php"><i class="fas fa-user"></i> Profile</a></li>
@@ -124,6 +132,8 @@ $current_page = basename($_SERVER['PHP_SELF']);
         height: 32px;
         border-radius: 50%;
         object-fit: cover;
+        border: 2px solid var(--accent-green);
+        background-color: var(--card-bg);
     }
 
     .user-name {

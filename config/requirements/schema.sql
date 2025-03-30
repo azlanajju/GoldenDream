@@ -87,6 +87,8 @@ CREATE TABLE Payments (
     PromoterID INT,
     AdminID INT DEFAULT NULL,
     SchemeID INT,
+    InstallmentID INT,
+
     Amount DECIMAL(10,2) NOT NULL,
     PaymentCodeValue INT DEFAULT 0,
     ScreenshotURL VARCHAR(255) NOT NULL,
@@ -96,7 +98,9 @@ CREATE TABLE Payments (
     FOREIGN KEY (CustomerID) REFERENCES Customers(CustomerID) ON DELETE CASCADE,
     FOREIGN KEY (PromoterID) REFERENCES Promoters(PromoterID) ON DELETE CASCADE,
     FOREIGN KEY (AdminID) REFERENCES Admins(AdminID) ON DELETE SET NULL,
-    FOREIGN KEY (SchemeID) REFERENCES Schemes(SchemeID) ON DELETE SET NULL
+    FOREIGN KEY (SchemeID) REFERENCES Schemes(SchemeID) ON DELETE SET NULL,
+        FOREIGN KEY (InstallmentID) REFERENCES Installments(InstallmentID) ON DELETE SET NULL
+
 );
 
 

@@ -1,8 +1,8 @@
 <?php
 require_once '../config/config.php';
 require_once '../config/session_check.php';
-$c_path="../";
-$current_page="payment_qr";
+$c_path = "../";
+$current_page = "payment_qr";
 // Get user data and validate session
 $userData = checkSession();
 
@@ -33,56 +33,117 @@ $payment_qrs = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
+        :root {
+            --dark-bg: #1A1D21;
+            --card-bg: #222529;
+            --accent-green: #2F9B7F;
+            --text-primary: rgba(255, 255, 255, 0.9);
+            --text-secondary: rgba(255, 255, 255, 0.7);
+            --border-color: rgba(255, 255, 255, 0.05);
+        }
+
         body {
-            background: #f8f9fa;
-            padding-top: 60px;
+            background: var(--dark-bg);
+            color: var(--text-primary);
+            min-height: 100vh;
+            margin: 0;
+            font-family: 'Inter', sans-serif;
         }
 
         .qr-container {
-            padding: 20px;
+            padding: 24px;
+            margin-top: 70px;
         }
 
         .qr-header {
-            background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
-            color: white;
-            border-radius: 15px;
-            padding: 30px;
-            margin-bottom: 30px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            background: linear-gradient(135deg, #2F9B7F 0%, #1e6e59 100%);
+            border-radius: 12px;
+            padding: 40px 24px;
+            margin-bottom: 24px;
+            position: relative;
+            overflow: hidden;
+            text-align: center;
+        }
+
+        .qr-header h2 {
+            color: #fff;
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            position: relative;
+        }
+
+        .qr-header p {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 16px;
+            margin: 0;
+            position: relative;
+        }
+
+        .section-header {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            border: 1px solid var(--border-color);
+        }
+
+        .section-header h3 {
+            color: var(--text-primary);
+            font-size: 20px;
+            font-weight: 600;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .section-header h3 i {
+            color: var(--accent-green);
         }
 
         .qr-card {
-            background: white;
-            border-radius: 15px;
-            padding: 30px;
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 24px;
             margin-bottom: 20px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+        }
+
+        .qr-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
         }
 
         .qr-section {
             text-align: center;
-            padding: 20px;
-            background: #f8f9fa;
-            border-radius: 10px;
+            padding: 24px;
+            background: rgba(47, 155, 127, 0.1);
+            border-radius: 12px;
             margin-bottom: 20px;
+            border: 1px solid var(--border-color);
         }
 
         .qr-image {
             max-width: 200px;
-            margin-bottom: 15px;
+            margin-bottom: 16px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
 
         .bank-details {
-            background: #f8f9fa;
-            border-radius: 10px;
-            padding: 20px;
+            background: rgba(47, 155, 127, 0.1);
+            border-radius: 12px;
+            padding: 24px;
             margin-bottom: 20px;
+            border: 1px solid var(--border-color);
         }
 
         .bank-detail-item {
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #dee2e6;
+            margin-bottom: 16px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border-color);
         }
 
         .bank-detail-item:last-child {
@@ -93,33 +154,72 @@ $payment_qrs = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         .bank-detail-label {
             font-weight: 500;
-            color: #6c757d;
-            font-size: 0.9rem;
-            margin-bottom: 5px;
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin-bottom: 8px;
         }
 
         .bank-detail-value {
-            color: #2c3e50;
+            color: var(--text-primary);
             font-size: 1.1rem;
+            word-break: break-all;
         }
 
         .empty-state {
             text-align: center;
             padding: 40px;
-            background: #f8f9fa;
-            border-radius: 10px;
+            background: var(--card-bg);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
         }
 
         .empty-state i {
-            font-size: 3rem;
-            color: #6c757d;
-            margin-bottom: 20px;
+            font-size: 48px;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+        }
+
+        .empty-state h3 {
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .empty-state p {
+            color: var(--text-secondary);
+            margin-bottom: 24px;
         }
 
         .customer-name {
-            color: #4a90e2;
+            color: var(--accent-green);
             font-weight: 500;
-            margin-bottom: 15px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .customer-name i {
+            font-size: 1.2rem;
+        }
+
+        @media (max-width: 768px) {
+            .qr-container {
+                margin-left: 70px;
+                padding: 16px;
+            }
+
+            .qr-header {
+                padding: 30px 20px;
+            }
+
+            .qr-card {
+                padding: 20px;
+            }
+
+            .qr-section,
+            .bank-details {
+                padding: 20px;
+            }
         }
     </style>
 </head>
@@ -137,7 +237,11 @@ $payment_qrs = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 </div>
 
                 <?php if (!empty($payment_qrs)): ?>
-                    <div class="row">
+                    <!-- QR Codes Section -->
+                    <div class="section-header">
+                        <h3><i class="fas fa-qrcode"></i> QR Codes</h3>
+                    </div>
+                    <div class="row mb-5">
                         <?php foreach ($payment_qrs as $payment_qr): ?>
                             <div class="col-md-6 mb-4">
                                 <div class="qr-card">
@@ -150,7 +254,22 @@ $payment_qrs = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                             class="qr-image">
                                         <p class="text-muted">Scan this QR code using any UPI payment app</p>
                                     </div>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
 
+                    <!-- Bank Details Section -->
+                    <div class="section-header">
+                        <h3><i class="fas fa-university"></i> Bank Details</h3>
+                    </div>
+                    <div class="row">
+                        <?php foreach ($payment_qrs as $payment_qr): ?>
+                            <div class="col-md-6 mb-4">
+                                <div class="qr-card">
+                                    <div class="customer-name">
+                                        <i class="fas fa-user"></i> <?php echo htmlspecialchars($payment_qr['CustomerName']); ?>
+                                    </div>
                                     <div class="bank-details">
                                         <div class="bank-detail-item">
                                             <div class="bank-detail-label">Account Name</div>

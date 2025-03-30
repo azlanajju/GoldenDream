@@ -1,8 +1,8 @@
 <?php
 require_once '../config/config.php';
 require_once '../config/session_check.php';
-$c_path="../";
-$current_page="subscriptions";
+$c_path = "../";
+$current_page = "subscriptions";
 // Get user data and validate session
 $userData = checkSession();
 
@@ -80,170 +80,295 @@ foreach ($nextPayments as $payment) {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
+        :root {
+            --dark-bg: #1A1D21;
+            --card-bg: #222529;
+            --accent-green: #2F9B7F;
+            --text-primary: rgba(255, 255, 255, 0.9);
+            --text-secondary: rgba(255, 255, 255, 0.7);
+            --border-color: rgba(255, 255, 255, 0.05);
+        }
+
         body {
-            background: #f8f9fa;
-            padding-top: 60px;
+            background: var(--dark-bg);
+            color: var(--text-primary);
+            min-height: 100vh;
+            margin: 0;
+            font-family: 'Inter', sans-serif;
         }
 
         .subscriptions-container {
-            padding: 20px;
-        }
-
-        .subscription-card {
-            background: white;
-            border-radius: 15px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-            transition: transform 0.3s ease;
-        }
-
-        .subscription-card:hover {
-            transform: translateY(-5px);
+            padding: 24px;
+            margin-top: 70px;
         }
 
         .subscription-header {
-            background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
-            color: white;
-            border-radius: 15px;
-            padding: 30px;
-            margin-bottom: 30px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            background: linear-gradient(135deg, #2F9B7F 0%, #1e6e59 100%);
+            border-radius: 12px;
+            padding: 40px 24px;
+            margin-bottom: 24px;
+            position: relative;
+            overflow: hidden;
+            text-align: center;
+        }
+
+        .subscription-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 100%);
+        }
+
+        .subscription-header h2 {
+            color: #fff;
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            position: relative;
+        }
+
+        .subscription-header p {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 16px;
+            margin: 0;
+            position: relative;
+        }
+
+        .subscription-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .subscription-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .subscription-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent-green), transparent);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .subscription-card:hover::before {
+            opacity: 1;
         }
 
         .scheme-name {
-            color: #4a90e2;
-            font-size: 1.5rem;
-            font-weight: bold;
-            margin-bottom: 10px;
+            color: var(--text-primary);
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .scheme-name i {
+            color: var(--accent-green);
         }
 
         .subscription-details {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
+            gap: 16px;
             margin: 20px 0;
         }
 
         .detail-item {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 10px;
+            background: rgba(47, 155, 127, 0.1);
+            padding: 16px;
+            border-radius: 8px;
             text-align: center;
+            border: 1px solid var(--border-color);
         }
 
         .detail-label {
-            color: #6c757d;
-            font-size: 0.9rem;
-            margin-bottom: 5px;
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin-bottom: 8px;
         }
 
         .detail-value {
-            font-weight: bold;
-            color: #2c3e50;
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 18px;
         }
 
         .progress {
-            height: 10px;
-            border-radius: 5px;
-            margin: 15px 0;
+            height: 8px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            margin: 16px 0;
+        }
+
+        .progress-bar {
+            background: var(--accent-green);
+            border-radius: 4px;
         }
 
         .status-badge {
-            padding: 5px 15px;
-            border-radius: 20px;
-            font-size: 0.9rem;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
         }
 
         .status-active {
-            background: #28a745;
-            color: white;
+            background: rgba(47, 155, 127, 0.1);
+            color: var(--accent-green);
         }
 
         .status-expired {
-            background: #dc3545;
-            color: white;
+            background: rgba(220, 53, 69, 0.1);
+            color: #dc3545;
         }
 
         .status-cancelled {
-            background: #6c757d;
-            color: white;
+            background: rgba(108, 117, 125, 0.1);
+            color: #6c757d;
         }
 
-        .btn-view {
-            background: #4a90e2;
-            color: white;
-            border: none;
-            padding: 8px 20px;
-            border-radius: 5px;
+        .btn-view,
+        .btn-payment {
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
             transition: all 0.3s ease;
         }
 
+        .btn-view {
+            background: rgba(47, 155, 127, 0.1);
+            color: var(--accent-green);
+            border: 1px solid var(--accent-green);
+        }
+
         .btn-view:hover {
-            background: #357abd;
+            background: var(--accent-green);
             color: white;
         }
 
         .btn-payment {
-            background: #28a745;
+            background: var(--accent-green);
             color: white;
             border: none;
-            padding: 8px 20px;
-            border-radius: 5px;
-            transition: all 0.3s ease;
         }
 
         .btn-payment:hover {
-            background: #218838;
-            color: white;
+            background: #248c6f;
+            transform: translateY(-2px);
         }
 
         .empty-state {
             text-align: center;
             padding: 40px;
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            background: var(--card-bg);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
         }
 
         .empty-state i {
-            font-size: 3rem;
-            color: #6c757d;
-            margin-bottom: 20px;
+            font-size: 48px;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+        }
+
+        .empty-state h3 {
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .empty-state p {
+            color: var(--text-secondary);
+            margin-bottom: 24px;
         }
 
         .payment-due {
             color: #dc3545;
-            font-weight: 600;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
 
         .payment-info {
-            background: #e3fcef;
-            border-radius: 10px;
-            padding: 15px;
-            margin-top: 15px;
+            background: rgba(47, 155, 127, 0.1);
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 16px;
+            border: 1px solid var(--border-color);
         }
 
         .payment-info i {
-            color: #28a745;
-            margin-right: 10px;
+            color: var(--accent-green);
+            margin-right: 8px;
         }
 
         .subscription-tabs {
-            margin-bottom: 20px;
+            margin-bottom: 24px;
+            display: flex;
+            gap: 12px;
         }
 
         .subscription-tabs .nav-link {
-            color: #6c757d;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            margin-right: 10px;
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+            padding: 8px 16px;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+        }
+
+        .subscription-tabs .nav-link:hover {
+            color: var(--text-primary);
+            background: rgba(47, 155, 127, 0.1);
+            border-color: var(--accent-green);
         }
 
         .subscription-tabs .nav-link.active {
-            background: #4a90e2;
+            background: var(--accent-green);
             color: white;
+            border-color: var(--accent-green);
+        }
+
+        @media (max-width: 768px) {
+            .subscriptions-container {
+                margin-left: 70px;
+                padding: 16px;
+            }
+
+            .subscription-header {
+                padding: 30px 20px;
+            }
+
+            .subscription-card {
+                padding: 20px;
+            }
+
+            .subscription-details {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>

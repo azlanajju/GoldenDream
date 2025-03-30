@@ -1,8 +1,8 @@
 <?php
 require_once '../config/config.php';
 require_once '../config/session_check.php';
-$c_path="../";
-$current_page="dashboard";
+$c_path = "../";
+$current_page = "dashboard";
 // Get user data and validate session
 $userData = checkSession();
 
@@ -90,184 +90,151 @@ $pending_withdrawals = $stmt->fetch(PDO::FETCH_ASSOC)['pending_withdrawals'];
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
-            --primary-gold: #FFD700;
-            --dark-bg: #000000;
-            --card-bg: rgba(20, 20, 20, 0.95);
-            --hover-gold: rgba(255, 215, 0, 0.1);
-            --border-gold: rgba(255, 215, 0, 0.3);
+            --dark-bg: #1A1D21;
+            --card-bg: #222529;
+            --accent-green: #2F9B7F;
+            --text-primary: rgba(255, 255, 255, 0.9);
+            --text-secondary: rgba(255, 255, 255, 0.7);
+            --card-hover: #2A2D31;
         }
 
         body {
             background: var(--dark-bg);
-            color: #fff;
+            color: var(--text-primary);
             min-height: 100vh;
             margin: 0;
             font-family: 'Inter', sans-serif;
         }
 
         .dashboard-container {
-            padding: 2rem;
-            margin-left: 250px;
+            padding: 16px;
+            margin-top: 70px;
             transition: margin-left 0.3s ease;
+            max-width: 1600px;
         }
 
         .dashboard-header {
-            background: var(--card-bg);
-            border-radius: 15px;
-            padding: 2rem;
-            margin-bottom: 2rem;
-            border: 1px solid var(--border-gold);
-            position: relative;
-            overflow: hidden;
+            background: linear-gradient(135deg, #2F9B7F 0%, #1e6e59 100%);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
         }
 
         .dashboard-header h2 {
-            color: var(--primary-gold);
-            font-size: 2rem;
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .dashboard-header h2 i {
-            font-size: 1.8rem;
+            font-size: 20px;
+            margin-bottom: 4px;
         }
 
         .dashboard-header p {
-            color: rgba(255, 255, 255, 0.8);
-            margin: 0;
-            font-size: 1.1rem;
+            font-size: 14px;
         }
 
         .stats-row {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 1.5rem;
-            margin-bottom: 2rem;
+            gap: 16px;
+            margin-bottom: 20px;
         }
 
         .stats-card {
             background: var(--card-bg);
-            border-radius: 15px;
-            padding: 1.5rem;
-            border: 1px solid var(--border-gold);
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .stats-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: linear-gradient(90deg, transparent, var(--primary-gold), transparent);
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-
-        .stats-card:hover::before {
-            opacity: 1;
-        }
-
-        .stats-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 20px rgba(255, 215, 0, 0.15);
+            border-radius: 12px;
+            padding: 16px;
         }
 
         .stats-icon {
-            font-size: 2rem;
-            color: var(--primary-gold);
-            margin-bottom: 1rem;
-            display: inline-block;
+            font-size: 18px;
+            margin-bottom: 12px;
         }
 
         .stats-card h5 {
-            color: rgba(255, 255, 255, 0.9);
-            font-size: 0.9rem;
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 0.5rem;
+            font-size: 12px;
+            margin-bottom: 6px;
         }
 
         .stats-card h3 {
-            color: var(--primary-gold);
-            font-size: 1.8rem;
-            font-weight: 600;
-            margin: 0;
+            font-size: 20px;
         }
 
         .info-cards {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 1.5rem;
+            gap: 16px;
         }
 
         .info-card {
-            background: var(--card-bg);
-            border-radius: 15px;
-            padding: 1.5rem;
-            border: 1px solid var(--border-gold);
-            height: 100%;
+            padding: 16px;
         }
 
         .info-card h4 {
-            color: var(--primary-gold);
-            font-size: 1.2rem;
-            font-weight: 600;
-            margin-bottom: 1.5rem;
+            color: var(--text-primary);
+            font-size: 16px;
+            font-weight: 500;
+            margin-bottom: 20px;
             display: flex;
             align-items: center;
-            gap: 0.5rem;
+            gap: 8px;
         }
 
         .info-card h4 i {
-            font-size: 1.2rem;
+            color: var(--accent-green);
+        }
+
+        .winner-item {
+            padding: 12px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.02);
+            margin-bottom: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .winner-item:hover {
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .winner-item h5 {
+            color: var(--text-primary);
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        .badge {
+            background: linear-gradient(135deg, #2F9B7F 0%, #1e6e59 100%) !important;
+            color: #fff;
+            font-weight: 500;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
         }
 
         .payment-due-date {
-            font-size: 2rem;
-            font-weight: 700;
-            color: var(--primary-gold);
-            margin: 1rem 0;
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--accent-green);
+            margin: 16px 0;
         }
 
         .empty-state {
             text-align: center;
-            padding: 3rem 2rem;
+            padding: 40px 20px;
         }
 
         .empty-state i {
-            font-size: 3rem;
-            color: var(--primary-gold);
-            margin-bottom: 1rem;
+            font-size: 32px;
+            color: var(--accent-green);
+            margin-bottom: 16px;
         }
 
         .empty-state h3 {
-            color: var(--primary-gold);
-            font-size: 1.2rem;
-            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+            font-size: 16px;
+            margin-bottom: 8px;
         }
 
         .empty-state p {
-            color: rgba(255, 255, 255, 0.7);
+            color: var(--text-secondary);
             margin: 0;
-        }
-
-        .badge {
-            background: var(--primary-gold) !important;
-            color: var(--dark-bg);
-            font-weight: 600;
-            padding: 0.5rem 1rem;
-            border-radius: 25px;
-            font-size: 0.8rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            font-size: 14px;
         }
 
         @media (max-width: 1200px) {
@@ -279,70 +246,71 @@ $pending_withdrawals = $stmt->fetch(PDO::FETCH_ASSOC)['pending_withdrawals'];
         @media (max-width: 768px) {
             .dashboard-container {
                 margin-left: 70px;
-                padding: 1rem;
+                padding: 12px;
             }
 
             .stats-row {
-                grid-template-columns: 1fr;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 12px;
             }
 
             .info-cards {
                 grid-template-columns: 1fr;
             }
 
-            .dashboard-header {
-                padding: 1.5rem;
+            .stats-card {
+                padding: 12px;
             }
 
-            .dashboard-header h2 {
-                font-size: 1.5rem;
+            .stats-card h5 {
+                font-size: 11px;
             }
 
             .stats-card h3 {
-                font-size: 1.5rem;
+                font-size: 18px;
+            }
+
+            .dashboard-header {
+                padding: 16px;
             }
         }
 
-        /* Animations */
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
+        @media (max-width: 480px) {
+            .stats-row {
+                grid-template-columns: 1fr;
             }
 
-            to {
-                opacity: 1;
-                transform: translateY(0);
+            .dashboard-container {
+                padding: 8px;
+            }
+
+            .stats-card {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+            }
+
+            .stats-icon {
+                margin-bottom: 0;
+            }
+
+            .stats-info {
+                flex: 1;
+            }
+
+            .stats-card h5 {
+                margin-bottom: 2px;
             }
         }
 
-        .dashboard-header {
-            animation: slideIn 0.6s ease-out;
-        }
+        @media (min-width: 769px) {
+            .sidebar {
+                /* width: 220px; */
+            }
 
-        .stats-card {
-            animation: slideIn 0.6s ease-out;
-        }
-
-        .stats-card:nth-child(1) {
-            animation-delay: 0.1s;
-        }
-
-        .stats-card:nth-child(2) {
-            animation-delay: 0.2s;
-        }
-
-        .stats-card:nth-child(3) {
-            animation-delay: 0.3s;
-        }
-
-        .stats-card:nth-child(4) {
-            animation-delay: 0.4s;
-        }
-
-        .info-card {
-            animation: slideIn 0.6s ease-out;
-            animation-delay: 0.5s;
+            .dashboard-container {
+                /* margin-left: 220px; */
+            }
         }
     </style>
 </head>
@@ -361,23 +329,31 @@ $pending_withdrawals = $stmt->fetch(PDO::FETCH_ASSOC)['pending_withdrawals'];
             <div class="stats-row">
                 <div class="stats-card">
                     <i class="fas fa-wallet stats-icon"></i>
-                    <h5>Available Balance</h5>
-                    <h3>₹<?php echo number_format($available_balance, 2); ?></h3>
+                    <div class="stats-info">
+                        <h5>AVAILABLE BALANCE</h5>
+                        <h3>₹<?php echo number_format($available_balance, 2); ?></h3>
+                    </div>
                 </div>
                 <div class="stats-card">
                     <i class="fas fa-calendar-check stats-icon"></i>
-                    <h5>Active Subscriptions</h5>
-                    <h3><?php echo $subscription_count; ?></h3>
+                    <div class="stats-info">
+                        <h5>ACTIVE SUBSCRIPTIONS</h5>
+                        <h3><?php echo $subscription_count; ?></h3>
+                    </div>
                 </div>
                 <div class="stats-card">
                     <i class="fas fa-trophy stats-icon"></i>
-                    <h5>Total Prizes Won</h5>
-                    <h3><?php echo $total_prizes; ?></h3>
+                    <div class="stats-info">
+                        <h5>TOTAL PRIZES WON</h5>
+                        <h3><?php echo $total_prizes; ?></h3>
+                    </div>
                 </div>
                 <div class="stats-card">
                     <i class="fas fa-clock stats-icon"></i>
-                    <h5>Pending Withdrawals</h5>
-                    <h3><?php echo $pending_withdrawals; ?></h3>
+                    <div class="stats-info">
+                        <h5>PENDING WITHDRAWALS</h5>
+                        <h3><?php echo $pending_withdrawals; ?></h3>
+                    </div>
                 </div>
             </div>
 
@@ -385,33 +361,48 @@ $pending_withdrawals = $stmt->fetch(PDO::FETCH_ASSOC)['pending_withdrawals'];
                 <div class="info-card">
                     <h4><i class="fas fa-calendar-alt"></i> Next Payment Due</h4>
                     <?php if ($next_payment): ?>
-                        <div>
+                        <div class="payment-info">
                             <h5><?php echo htmlspecialchars($next_payment['SchemeName']); ?></h5>
                             <div class="payment-due-date">
                                 <?php echo date('d M Y', strtotime($next_payment['EndDate'])); ?>
                             </div>
-                            <div>
-                                <strong>Amount:</strong> ₹<?php echo number_format($next_payment['MonthlyPayment'], 2); ?>
+                            <div class="payment-amount">
+                                Amount: ₹<?php echo number_format($next_payment['MonthlyPayment'], 2); ?>
                             </div>
                         </div>
                     <?php else: ?>
                         <div class="empty-state">
                             <i class="fas fa-calendar-times"></i>
                             <h3>No Active Subscriptions</h3>
-                            <p>You don't have any active subscriptions at the moment.</p>
+                            <p>You don't have any active subscriptions.</p>
                         </div>
                     <?php endif; ?>
                 </div>
 
                 <div class="info-card">
-                    <h4><i class="fas fa-trophy"></i> Current Month Winners</h4>
-                    <?php if (!empty($current_month_winners)): ?>
-                        <?php foreach ($current_month_winners as $winner): ?>
+                    <h4><i class="fas fa-trophy"></i> Recent Winners</h4>
+                    <?php
+                    // Update the SQL query to get recent winners instead of current month
+                    $stmt = $db->prepare("
+                        SELECT w.*, s.SchemeName, w.WinningDate 
+                        FROM Winners w
+                        JOIN Subscriptions sub ON w.UserID = sub.CustomerID
+                        JOIN Schemes s ON sub.SchemeID = s.SchemeID
+                        WHERE w.UserID = ? 
+                        AND w.UserType = 'Customer'
+                        ORDER BY w.WinningDate DESC
+                        LIMIT 5
+                    ");
+                    $stmt->execute([$userData['customer_id']]);
+                    $recent_winners = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+                    if (!empty($recent_winners)): ?>
+                        <?php foreach ($recent_winners as $winner): ?>
                             <div class="winner-item">
                                 <h5><?php echo htmlspecialchars($winner['SchemeName']); ?></h5>
                                 <div class="d-flex justify-content-between align-items-center">
                                     <span class="badge"><?php echo $winner['PrizeType']; ?></span>
-                                    <small class="text-muted">
+                                    <small style="color: var(--text-secondary);">
                                         <?php echo date('d M Y', strtotime($winner['WinningDate'])); ?>
                                     </small>
                                 </div>
@@ -420,7 +411,7 @@ $pending_withdrawals = $stmt->fetch(PDO::FETCH_ASSOC)['pending_withdrawals'];
                     <?php else: ?>
                         <div class="empty-state">
                             <i class="fas fa-trophy"></i>
-                            <h3>No Winners This Month</h3>
+                            <h3>No Winners Yet</h3>
                             <p>Keep participating to win prizes!</p>
                         </div>
                     <?php endif; ?>
@@ -430,6 +421,21 @@ $pending_withdrawals = $stmt->fetch(PDO::FETCH_ASSOC)['pending_withdrawals'];
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function adjustLayout() {
+            const windowWidth = window.innerWidth;
+            const container = document.querySelector('.dashboard-container');
+
+            // if (windowWidth <= 768) {
+            //     container.style.marginLeft = '70px';
+            // } else {
+            //     container.style.marginLeft = '220px';
+            // }
+        }
+
+        window.addEventListener('load', adjustLayout);
+        window.addEventListener('resize', adjustLayout);
+    </script>
 </body>
 
 </html>
