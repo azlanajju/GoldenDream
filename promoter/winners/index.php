@@ -8,7 +8,7 @@ if (!isset($_SESSION['promoter_id'])) {
 }
 
 $menuPath = "../";
-$currentPage = "profile";
+$currentPage = "winners";
 
 // Database connection
 require_once("../../config/config.php");
@@ -29,51 +29,33 @@ try {
     $messageType = "error";
 }
 
-// Handle password change
-if (isset($_POST['change_password'])) {
-    $oldPassword = $_POST['old_password'];
-    $newPassword = $_POST['new_password'];
-    $confirmPassword = $_POST['confirm_password'];
-    
-    // Validate inputs
-    if (empty($oldPassword) || empty($newPassword) || empty($confirmPassword)) {
-        $message = "All fields are required";
-        $messageType = "error";
-        $showNotification = true;
-    } elseif ($newPassword !== $confirmPassword) {
-        $message = "New password and confirm password do not match";
-        $messageType = "error";
-        $showNotification = true;
-    } elseif (strlen($newPassword) < 8) {
-        $message = "New password must be at least 8 characters long";
-        $messageType = "error";
-        $showNotification = true;
-    } else {
-        try {
-            // Verify old password
-            $stmt = $conn->prepare("SELECT PasswordHash FROM Promoters WHERE PromoterID = ?");
-            $stmt->execute([$_SESSION['promoter_id']]);
-            $result = $stmt->fetch(PDO::FETCH_ASSOC);
-            
-            if (password_verify($oldPassword, $result['PasswordHash'])) {
-                // Update password
-                $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
-                $stmt = $conn->prepare("UPDATE Promoters SET PasswordHash = ? WHERE PromoterID = ?");
-                $stmt->execute([$hashedPassword, $_SESSION['promoter_id']]);
-                
-                $message = "Password changed successfully";
-                $messageType = "success";
-                $showNotification = true;
-            } else {
-                $message = "Current password is incorrect";
-                $messageType = "error";
-                $showNotification = true;
-            }
-        } catch (PDOException $e) {
-            $message = "Error changing password: " . $e->getMessage();
-            $messageType = "error";
-            $showNotification = true;
-        }
+// Get promoter's winning history
+try {
+    $stmt = $conn->prepare("
+        SELECT * FROM Winners 
+        WHERE UserID = ? AND UserType = 'Promoter' 
+        ORDER BY WinningDate DESC
+    ");
+    $stmt->execute([$_SESSION['promoter_id']]);
+    $winners = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    $message = "Error fetching winning history";
+    $messageType = "error";
+}
+
+// Get total prizes won
+$totalPrizes = count($winners);
+$pendingPrizes = 0;
+$claimedPrizes = 0;
+$expiredPrizes = 0;
+
+foreach ($winners as $winner) {
+    if ($winner['Status'] === 'Pending') {
+        $pendingPrizes++;
+    } elseif ($winner['Status'] === 'Claimed') {
+        $claimedPrizes++;
+    } elseif ($winner['Status'] === 'Expired') {
+        $expiredPrizes++;
     }
 }
 ?>
@@ -83,7 +65,7 @@ if (isset($_POST['change_password'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Change Password | Golden Dreams</title>
+    <title>My Prizes | Golden Dreams</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -244,65 +226,150 @@ if (isset($_POST['change_password'])) {
             color: var(--text-secondary);
         }
 
-        .form-group {
-            margin-bottom: 25px;
+        .winners-container {
+            margin-top: 30px;
         }
 
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
+        .winner-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            border-left: 4px solid var(--primary-color);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .winner-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .winner-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .winner-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        .winner-date {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .winner-details {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .winner-detail {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .detail-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 5px;
+        }
+
+        .detail-value {
+            font-size: 16px;
             font-weight: 500;
             color: var(--text-primary);
         }
 
-        .form-control {
-            width: 100%;
-            padding: 12px 15px;
-            border: 1px solid var(--border-color);
-            border-radius: 10px;
-            font-size: 15px;
-            transition: all 0.3s ease;
-            background-color: white;
+        .winner-status {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
         }
 
-        .form-control:focus {
-            outline: none;
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 3px var(--primary-light);
+        .status-pending {
+            background: rgba(241, 196, 15, 0.1);
+            color: #f1c40f;
         }
 
-        .password-toggle {
-            position: absolute;
-            right: 15px;
-            top: 50%;
-            transform: translateY(-50%);
+        .status-claimed {
+            background: rgba(46, 204, 113, 0.1);
+            color: #2ecc71;
+        }
+
+        .status-expired {
+            background: rgba(231, 76, 60, 0.1);
+            color: #e74c3c;
+        }
+
+        .winner-actions {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 15px;
+        }
+
+        .btn-action {
+            padding: 8px 15px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
             cursor: pointer;
-            color: var(--text-secondary);
-        }
-
-        .password-field {
-            position: relative;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            margin-left: 10px;
         }
 
         .btn-primary {
             background: var(--primary-color);
             color: white;
             border: none;
-            padding: 12px 25px;
-            border-radius: 10px;
-            font-size: 16px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
         }
 
         .btn-primary:hover {
             background: var(--secondary-color);
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(13, 106, 80, 0.3);
+        }
+
+        .btn-secondary {
+            background: var(--bg-light);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: var(--border-color);
+        }
+
+        .no-winners {
+            text-align: center;
+            padding: 50px 0;
+            color: var(--text-secondary);
+        }
+
+        .no-winners i {
+            font-size: 50px;
+            margin-bottom: 20px;
+            color: var(--border-color);
+        }
+
+        .no-winners h3 {
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+
+        .no-winners p {
+            font-size: 14px;
+            max-width: 400px;
+            margin: 0 auto;
         }
 
         .alert {
@@ -322,29 +389,6 @@ if (isset($_POST['change_password'])) {
         .alert-error {
             background: rgba(231, 76, 60, 0.1);
             color: var(--error-color);
-        }
-
-        .password-requirements {
-            margin-top: 30px;
-            padding: 20px;
-            background: var(--bg-light);
-            border-radius: 10px;
-        }
-
-        .password-requirements h3 {
-            font-size: 16px;
-            margin-bottom: 10px;
-            color: var(--text-primary);
-        }
-
-        .password-requirements ul {
-            margin-left: 20px;
-        }
-
-        .password-requirements li {
-            margin-bottom: 5px;
-            font-size: 14px;
-            color: var(--text-secondary);
         }
 
         @media (max-width: 768px) {
@@ -369,6 +413,15 @@ if (isset($_POST['change_password'])) {
                 width: 100px;
                 height: 100px;
             }
+            
+            .winner-details {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .winner-detail {
+                min-width: 100%;
+            }
         }
     </style>
 </head>
@@ -390,6 +443,20 @@ if (isset($_POST['change_password'])) {
                 </div>
                 <h2 class="profile-name"><?php echo htmlspecialchars($promoter['Name']); ?></h2>
                 <p class="profile-id">ID: <?php echo htmlspecialchars($promoter['PromoterUniqueID']); ?></p>
+                <div class="profile-stats">
+                    <div class="stat-item">
+                        <span class="stat-value"><?php echo $totalPrizes; ?></span>
+                        <span class="stat-label">Total Prizes</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value"><?php echo $claimedPrizes; ?></span>
+                        <span class="stat-label">Claimed</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value"><?php echo $pendingPrizes; ?></span>
+                        <span class="stat-label">Pending</span>
+                    </div>
+                </div>
             </div>
 
             <div class="main-content">
@@ -402,74 +469,77 @@ if (isset($_POST['change_password'])) {
 
                 <div class="section-header">
                     <div class="section-icon">
-                        <i class="fas fa-lock"></i>
+                        <i class="fas fa-trophy"></i>
                     </div>
                     <div class="section-info">
-                        <h2>Change Password</h2>
-                        <p>Update your account password</p>
+                        <h2>My Prizes</h2>
+                        <p>View your winning history and prize details</p>
                     </div>
                 </div>
 
-                <form method="POST" action="">
-                    <div class="form-group">
-                        <label for="old_password">Current Password</label>
-                        <div class="password-field">
-                            <input type="password" id="old_password" name="old_password" class="form-control" required>
-                            <i class="fas fa-eye password-toggle" onclick="togglePassword('old_password')"></i>
+                <div class="winners-container">
+                    <?php if (empty($winners)): ?>
+                        <div class="no-winners">
+                            <i class="fas fa-trophy"></i>
+                            <h3>No Prizes Yet</h3>
+                            <p>You haven't won any prizes yet. Keep participating in our schemes to increase your chances of winning!</p>
                         </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="new_password">New Password</label>
-                        <div class="password-field">
-                            <input type="password" id="new_password" name="new_password" class="form-control" required>
-                            <i class="fas fa-eye password-toggle" onclick="togglePassword('new_password')"></i>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="confirm_password">Confirm New Password</label>
-                        <div class="password-field">
-                            <input type="password" id="confirm_password" name="confirm_password" class="form-control" required>
-                            <i class="fas fa-eye password-toggle" onclick="togglePassword('confirm_password')"></i>
-                        </div>
-                    </div>
-
-                    <button type="submit" name="change_password" class="btn-primary">
-                        <i class="fas fa-save"></i>
-                        Update Password
-                    </button>
-                </form>
-
-                <div class="password-requirements">
-                    <h3>Password Requirements</h3>
-                    <ul>
-                        <li>At least 8 characters long</li>
-                        <li>Include a mix of uppercase and lowercase letters</li>
-                        <li>Include at least one number</li>
-                        <li>Include at least one special character (e.g., !, @, #, $)</li>
-                    </ul>
+                    <?php else: ?>
+                        <?php foreach ($winners as $winner): ?>
+                            <div class="winner-card">
+                                <div class="winner-header">
+                                    <h3 class="winner-title"><?php echo htmlspecialchars($winner['PrizeType']); ?></h3>
+                                    <span class="winner-date">
+                                        <i class="far fa-calendar-alt"></i> 
+                                        <?php echo date('d M Y', strtotime($winner['WinningDate'])); ?>
+                                    </span>
+                                </div>
+                                
+                                <div class="winner-details">
+                                    <div class="winner-detail">
+                                        <div class="detail-label">Prize Type</div>
+                                        <div class="detail-value"><?php echo htmlspecialchars($winner['PrizeType']); ?></div>
+                                    </div>
+                                    <div class="winner-detail">
+                                        <div class="detail-label">Status</div>
+                                        <div class="detail-value">
+                                            <span class="winner-status status-<?php echo strtolower($winner['Status']); ?>">
+                                                <?php echo htmlspecialchars($winner['Status']); ?>
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <?php if ($winner['Remarks']): ?>
+                                    <div class="winner-detail">
+                                        <div class="detail-label">Remarks</div>
+                                        <div class="detail-value"><?php echo htmlspecialchars($winner['Remarks']); ?></div>
+                                    </div>
+                                    <?php endif; ?>
+                                </div>
+                                
+                                <div class="winner-actions">
+                                    <?php if ($winner['Status'] === 'Pending'): ?>
+                                        <button class="btn-action btn-primary">
+                                            <i class="fas fa-check-circle"></i> Claim Prize
+                                        </button>
+                                    <?php elseif ($winner['Status'] === 'Claimed'): ?>
+                                        <button class="btn-action btn-secondary" disabled>
+                                            <i class="fas fa-check"></i> Claimed
+                                        </button>
+                                    <?php elseif ($winner['Status'] === 'Expired'): ?>
+                                        <button class="btn-action btn-secondary" disabled>
+                                            <i class="fas fa-times-circle"></i> Expired
+                                        </button>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        function togglePassword(inputId) {
-            const input = document.getElementById(inputId);
-            const icon = input.nextElementSibling;
-            
-            if (input.type === 'password') {
-                input.type = 'text';
-                icon.classList.remove('fa-eye');
-                icon.classList.add('fa-eye-slash');
-            } else {
-                input.type = 'password';
-                icon.classList.remove('fa-eye-slash');
-                icon.classList.add('fa-eye');
-            }
-        }
-
         // Ensure proper topbar integration
         document.addEventListener('DOMContentLoaded', function() {
             const sidebar = document.getElementById('sidebar');

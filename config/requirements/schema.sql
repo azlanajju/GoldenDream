@@ -75,6 +75,8 @@ CREATE TABLE Customers (
     PromoterID INT,
     ReferredBy  VARCHAR(50), 
     Status ENUM('Active', 'Inactive', 'Suspended') DEFAULT 'Active',
+    Gender ENUM('Male', 'Female', 'Other') DEFAULT NULL,
+    DateOfBirth DATE DEFAULT NULL,
     CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UpdatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (PromoterID) REFERENCES Promoters(PromoterID) ON DELETE SET NULL
@@ -198,6 +200,7 @@ CREATE TABLE Winners (
     Status ENUM('Pending', 'Claimed', 'Expired') DEFAULT 'Pending',
     AdminID INT DEFAULT NULL,
     Remarks TEXT,
+    FOREIGN KEY (UserID) REFERENCES Customers(CustomerID) ON DELETE CASCADE,
     FOREIGN KEY (AdminID) REFERENCES Admins(AdminID) ON DELETE SET NULL
 );
 

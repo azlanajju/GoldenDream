@@ -53,13 +53,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
         $maxSize = 5 * 1024 * 1024; // 5MB
 
+        // Generate unique timestamp for files
+        $timestamp = time();
+        $uniqueId = uniqid($timestamp . '_');
+
         // Validate and move ID Proof
         if ($idProofFile['error'] === 0 && 
             in_array($idProofFile['type'], $allowedTypes) && 
             $idProofFile['size'] <= $maxSize) {
             
             $idProofExt = pathinfo($idProofFile['name'], PATHINFO_EXTENSION);
-            $idProofFileName = 'id_proof_' . $_SESSION['promoter_id'] . '.' . $idProofExt;
+            $idProofFileName = 'id_proof_' . $uniqueId . '.' . $idProofExt;
+            
+            // Delete old file if exists
+            if ($kyc && $kyc['IDProofImageURL']) {
+                $oldFile = $uploadDir . $kyc['IDProofImageURL'];
+                if (file_exists($oldFile)) {
+                    unlink($oldFile);
+                }
+            }
+            
             move_uploaded_file($idProofFile['tmp_name'], $uploadDir . $idProofFileName);
         } else {
             throw new Exception("Invalid ID proof file. Please use JPG, PNG or PDF under 5MB.");
@@ -71,7 +84,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $addressProofFile['size'] <= $maxSize) {
             
             $addressProofExt = pathinfo($addressProofFile['name'], PATHINFO_EXTENSION);
-            $addressProofFileName = 'address_proof_' . $_SESSION['promoter_id'] . '.' . $addressProofExt;
+            $addressProofFileName = 'address_proof_' . $uniqueId . '.' . $addressProofExt;
+            
+            // Delete old file if exists
+            if ($kyc && $kyc['AddressProofImageURL']) {
+                $oldFile = $uploadDir . $kyc['AddressProofImageURL'];
+                if (file_exists($oldFile)) {
+                    unlink($oldFile);
+                }
+            }
+            
             move_uploaded_file($addressProofFile['tmp_name'], $uploadDir . $addressProofFileName);
         } else {
             throw new Exception("Invalid address proof file. Please use JPG, PNG or PDF under 5MB.");
@@ -79,14 +101,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // Insert or Update KYC details
         if ($kyc) {
+            // If KYC exists and was previously verified, set to pending for re-verification
+           
+            
             $stmt = $conn->prepare("
                 UPDATE KYC SET 
                 AadharNumber = ?, PANNumber = ?, 
                 IDProofType = ?, IDProofImageURL = ?,
                 AddressProofType = ?, AddressProofImageURL = ?,
-                Status = 'Pending', SubmittedAt = CURRENT_TIMESTAMP
+                Status = ?, SubmittedAt = CURRENT_TIMESTAMP,
+                Remarks = NULL
                 WHERE UserID = ? AND UserType = 'Promoter'
             ");
+            $params = [
+                $aadharNumber, 
+                $panNumber, 
+                $idProofType, 
+                $idProofFileName, 
+                $addressProofType, 
+                $addressProofFileName,
+                $newStatus,
+                $_SESSION['promoter_id']
+            ];
         } else {
             $stmt = $conn->prepare("
                 INSERT INTO KYC (
@@ -96,15 +132,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     Status, SubmittedAt
                 ) VALUES (?, 'Promoter', ?, ?, ?, ?, ?, ?, 'Pending', CURRENT_TIMESTAMP)
             ");
+            $params = [
+                $_SESSION['promoter_id'],
+                $aadharNumber,
+                $panNumber,
+                $idProofType,
+                $idProofFileName,
+                $addressProofType,
+                $addressProofFileName
+            ];
         }
-
-        $params = $kyc ? 
-            [$aadharNumber, $panNumber, $idProofType, $idProofFileName, $addressProofType, $addressProofFileName, $_SESSION['promoter_id']] :
-            [$_SESSION['promoter_id'], $aadharNumber, $panNumber, $idProofType, $idProofFileName, $addressProofType, $addressProofFileName];
 
         $stmt->execute($params);
 
-        $message = "KYC details submitted successfully!";
+        $message = $kyc ? "KYC details updated successfully!" : "KYC details submitted successfully!";
         $messageType = "success";
         $showNotification = true;
 
@@ -706,10 +747,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     
                     <?php if ($kyc): ?>
                         <div class="status-badge status-<?php echo strtolower($kyc['Status']); ?>">
-                            <i class="fas fa-<?php 
-                                echo $kyc['Status'] === 'Verified' ? 'check-circle' : 
-                                    ($kyc['Status'] === 'Rejected' ? 'times-circle' : 'clock');
-                            ?>"></i>
+                
                             <?php echo $kyc['Status']; ?>
                         </div>
                         <?php if ($kyc['Status'] === 'Rejected' && $kyc['Remarks']): ?>
