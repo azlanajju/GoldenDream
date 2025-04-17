@@ -18,9 +18,10 @@ $stmt = $db->prepare("
     SELECT s.*, 
            CASE WHEN sub.SubscriptionID IS NOT NULL THEN 1 ELSE 0 END as is_subscribed,
            sub.SubscriptionID,
-           sub.StartDate,
+           sub.StartDate as subscription_start_date,
            sub.EndDate,
-           sub.RenewalStatus
+           sub.RenewalStatus,
+           s.StartDate as scheme_start_date
     FROM Schemes s
     LEFT JOIN Subscriptions sub ON s.SchemeID = sub.SchemeID 
         AND sub.CustomerID = ? AND sub.RenewalStatus = 'Active'
@@ -284,7 +285,7 @@ $activeSubscriptions = $stmt->fetchAll(PDO::FETCH_ASSOC);
             border-color: var(--border-color);
             padding: 12px 16px;
             vertical-align: middle;
-            color:#1A1D21;
+            color: #1A1D21;
         }
 
         .badge {
@@ -392,6 +393,15 @@ $activeSubscriptions = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                         <span class="total-amount">
                                             ₹<?php echo number_format($scheme['MonthlyPayment'] * $scheme['TotalPayments'], 2); ?>
                                         </span>
+                                    </li>
+                                    <li>
+                                        <i class="fas fa-clock"></i>
+                                        <?php
+                                        $startDate = new DateTime($scheme['scheme_start_date']);
+                                        $currentDate = new DateTime();
+                                        $datePrefix = $startDate > $currentDate ? 'Starting from' : 'Started on';
+                                        echo $datePrefix . ': ' . $startDate->format('M d, Y');
+                                        ?>
                                     </li>
                                 </ul>
 

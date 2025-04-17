@@ -684,7 +684,7 @@ include("../components/topbar.php");
                     <div class="customer-header">
                         <div class="customer-avatar">
                             <?php if ($payment['CustomerImage']): ?>
-                                <img src="../../<?php echo htmlspecialchars($payment['CustomerImage']); ?>" alt="<?php echo htmlspecialchars($payment['CustomerName']); ?>">
+                                <img src="../../customer/profile/<?php echo htmlspecialchars($payment['CustomerImage']); ?>" alt="<?php echo htmlspecialchars($payment['CustomerName']); ?>">
                             <?php else: ?>
                                 <?php
                                 $initials = '';

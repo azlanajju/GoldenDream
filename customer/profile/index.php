@@ -270,7 +270,7 @@ $customer = $stmt->fetch(PDO::FETCH_ASSOC);
                             </div>
                         </div>
                         <div class="profile-actions">
-                            <a href="edit_profile.php" class="btn btn-edit">
+                            <a href="./editProfile/" class="btn btn-edit">
                                 <i class="fas fa-edit"></i> Edit Profile
                             </a>
                         </div>
@@ -315,7 +315,7 @@ $customer = $stmt->fetch(PDO::FETCH_ASSOC);
                         <div class="profile-card">
                             <div class="d-flex justify-content-between align-items-center mb-3">
                                 <h4><i class="fas fa-university"></i> Bank Information</h4>
-                                <a href="edit_bank.php" class="btn btn-edit">
+                                <a href="./editBank/" class="btn btn-edit">
                                     <i class="fas fa-edit"></i> Edit Bank Details
                                 </a>
                             </div>
@@ -346,7 +346,7 @@ $customer = $stmt->fetch(PDO::FETCH_ASSOC);
                             <h4><i class="fas fa-shield-alt"></i> Account Security</h4> <br>
                             <div class="row g-3 center">
                                 <div class="col-md-8">
-                                    <a href="change_password.php" class="btn btn-outline-primary w-100">
+                                    <a href="./changePassword/" class="btn btn-outline-primary w-100">
                                         <i class="fas fa-key me-2"></i> Change Password
                                     </a>
                                 </div>

@@ -253,6 +253,8 @@ include("../components/topbar.php");
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../assets/css/admin.css">
+    <!-- Add Select2 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <style>
         .winner-card {
             background: white;
@@ -784,7 +786,7 @@ include("../components/topbar.php");
 
                 <div class="form-group" id="customerSelect" style="display: none;">
                     <label>Select Customer</label>
-                    <select name="customer_id" class="form-control" onchange="updateUserId(this.value, 'customer')">
+                    <select name="customer_id" class="form-control select2" onchange="updateUserId(this.value, 'customer')">
                         <option value="">Select Customer</option>
                         <?php foreach ($customers as $customer): ?>
                             <option value="<?php echo $customer['CustomerID']; ?>">
@@ -797,7 +799,7 @@ include("../components/topbar.php");
 
                 <div class="form-group" id="promoterSelect" style="display: none;">
                     <label>Select Promoter</label>
-                    <select name="promoter_id" class="form-control" onchange="updateUserId(this.value, 'promoter')">
+                    <select name="promoter_id" class="form-control select2" onchange="updateUserId(this.value, 'promoter')">
                         <option value="">Select Promoter</option>
                         <?php foreach ($promoters as $promoter): ?>
                             <option value="<?php echo $promoter['PromoterID']; ?>">
@@ -821,6 +823,35 @@ include("../components/topbar.php");
                 </div>
 
                 <div class="form-group">
+                    <label>
+                        <input type="checkbox" name="is_scheme_winner" id="isSchemeWinner" onchange="toggleSchemeFields()">
+                        Scheme Winner
+                    </label>
+                </div>
+
+                <div class="form-group" id="schemeFields" style="display: none;">
+                    <label>Select Scheme</label>
+                    <select name="scheme_id" class="form-control" onchange="loadInstallments(this.value)">
+                        <option value="">Select Scheme</option>
+                        <?php
+                        $stmt = $conn->query("SELECT SchemeID, SchemeName FROM Schemes WHERE Status = 'Active'");
+                        while ($scheme = $stmt->fetch(PDO::FETCH_ASSOC)):
+                        ?>
+                            <option value="<?php echo $scheme['SchemeID']; ?>">
+                                <?php echo htmlspecialchars($scheme['SchemeName']); ?>
+                            </option>
+                        <?php endwhile; ?>
+                    </select>
+                </div>
+
+                <div class="form-group" id="installmentFields" style="display: none;">
+                    <label>Select Installment</label>
+                    <select name="installment_id" class="form-control">
+                        <option value="">Select Installment</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
                     <label>Remarks</label>
                     <textarea name="remarks" class="form-control" rows="3" placeholder="Enter any additional remarks"></textarea>
                 </div>
@@ -832,38 +863,56 @@ include("../components/topbar.php");
         </div>
     </div>
 
+    <!-- Add Select2 JS -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script>
-        // Handle search and filters
-        const searchInput = document.querySelector('.search-input');
-        const statusSelect = document.querySelector('select[name="status_filter"]');
-        const prizeTypeSelect = document.querySelector('select[name="prize_type"]');
-        const userTypeSelect = document.querySelector('select[name="user_type"]');
+        // Initialize Select2 for customer and promoter dropdowns
+        $(document).ready(function() {
+            $('select[name="customer_id"]').select2({
+                placeholder: "Search and select customer...",
+                allowClear: true,
+                width: '100%'
+            });
 
-        let searchTimeout;
+            $('select[name="promoter_id"]').select2({
+                placeholder: "Search and select promoter...",
+                allowClear: true,
+                width: '100%'
+            });
 
-        function updateFilters() {
-            const search = searchInput.value.trim();
-            const status = statusSelect.value;
-            const prizeType = prizeTypeSelect.value;
-            const userType = userTypeSelect.value;
+            // Handle search and filters
+            const searchInput = document.querySelector('.search-input');
+            const statusSelect = document.querySelector('select[name="status_filter"]');
+            const prizeTypeSelect = document.querySelector('select[name="prize_type"]');
+            const userTypeSelect = document.querySelector('select[name="user_type"]');
 
-            const params = new URLSearchParams();
-            if (search) params.append('search', search);
-            if (status) params.append('status_filter', status);
-            if (prizeType) params.append('prize_type', prizeType);
-            if (userType) params.append('user_type', userType);
+            let searchTimeout;
 
-            window.location.href = 'index.php' + (params.toString() ? '?' + params.toString() : '');
-        }
+            function updateFilters() {
+                const search = searchInput.value.trim();
+                const status = statusSelect.value;
+                const prizeType = prizeTypeSelect.value;
+                const userType = userTypeSelect.value;
 
-        searchInput.addEventListener('input', function() {
-            clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(updateFilters, 500);
+                const params = new URLSearchParams();
+                if (search) params.append('search', search);
+                if (status) params.append('status_filter', status);
+                if (prizeType) params.append('prize_type', prizeType);
+                if (userType) params.append('user_type', userType);
+
+                window.location.href = 'index.php' + (params.toString() ? '?' + params.toString() : '');
+            }
+
+            searchInput.addEventListener('input', function() {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(updateFilters, 500);
+            });
+
+            statusSelect.addEventListener('change', updateFilters);
+            prizeTypeSelect.addEventListener('change', updateFilters);
+            userTypeSelect.addEventListener('change', updateFilters);
         });
-
-        statusSelect.addEventListener('change', updateFilters);
-        prizeTypeSelect.addEventListener('change', updateFilters);
-        userTypeSelect.addEventListener('change', updateFilters);
 
         // Handle remarks form
         function showRemarks(button, action, winnerId) {
@@ -969,6 +1018,44 @@ include("../components/topbar.php");
             userIdField.value = value;
         }
 
+        // Toggle scheme fields based on checkbox
+        function toggleSchemeFields() {
+            const isSchemeWinner = document.getElementById('isSchemeWinner').checked;
+            const schemeFields = document.getElementById('schemeFields');
+            const installmentFields = document.getElementById('installmentFields');
+
+            schemeFields.style.display = isSchemeWinner ? 'block' : 'none';
+            installmentFields.style.display = isSchemeWinner ? 'block' : 'none';
+
+            if (!isSchemeWinner) {
+                document.querySelector('select[name="scheme_id"]').value = '';
+                document.querySelector('select[name="installment_id"]').value = '';
+            }
+        }
+
+        // Load installments for selected scheme
+        function loadInstallments(schemeId) {
+            const installmentSelect = document.querySelector('select[name="installment_id"]');
+            installmentSelect.innerHTML = '<option value="">Select Installment</option>';
+
+            if (!schemeId) {
+                return;
+            }
+
+            // Make AJAX request to get installments
+            fetch(`get_installments.php?scheme_id=${schemeId}`)
+                .then(response => response.json())
+                .then(data => {
+                    data.forEach(installment => {
+                        const option = document.createElement('option');
+                        option.value = installment.InstallmentID;
+                        option.textContent = `${installment.InstallmentName} (${installment.DrawDate})`;
+                        installmentSelect.appendChild(option);
+                    });
+                })
+                .catch(error => console.error('Error loading installments:', error));
+        }
+
         // Make sure the form event listener is specific to the Add Winner form
         document.addEventListener('DOMContentLoaded', function() {
             const addWinnerForm = document.querySelector('#addWinnerModal form');
@@ -1021,6 +1108,32 @@ include("../components/topbar.php");
 
                     this.insertBefore(errorDiv, this.firstChild);
                     return false;
+                }
+
+                // Validate scheme winner fields if checked
+                const isSchemeWinner = document.getElementById('isSchemeWinner').checked;
+                if (isSchemeWinner) {
+                    const schemeId = this.querySelector('select[name="scheme_id"]').value;
+                    const installmentId = this.querySelector('select[name="installment_id"]').value;
+
+                    if (!schemeId) {
+                        this.querySelector('select[name="scheme_id"]').style.borderColor = '#e74c3c';
+                        errorMessage = 'Please select a scheme';
+                        hasError = true;
+                    } else if (!installmentId) {
+                        this.querySelector('select[name="installment_id"]').style.borderColor = '#e74c3c';
+                        errorMessage = 'Please select an installment';
+                        hasError = true;
+                    }
+
+                    if (hasError) {
+                        e.preventDefault();
+                        const errorDiv = document.createElement('div');
+                        errorDiv.className = 'error-message';
+                        errorDiv.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${errorMessage}`;
+                        this.insertBefore(errorDiv, this.firstChild);
+                        return false;
+                    }
                 }
 
                 // Show loading state on button

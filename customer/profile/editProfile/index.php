@@ -1,32 +1,25 @@
 <?php
-require_once '../config/config.php';
-require_once '../config/session_check.php';
-$c_path = "../";
+require_once '../../../config/config.php';
+require_once '../../config/session_check.php';
+$c_path = "../../";
 $current_page = "profile";
+
 // Get user data and validate session
 $userData = checkSession();
 
-// Debug session data
-error_log("User Data: " . print_r($userData, true));
-
-// Get customer data
+// Initialize database connection
 $database = new Database();
 $db = $database->getConnection();
 
-// Debug customer ID
-error_log("Customer ID: " . $userData['customer_id']);
-
+// Get customer data
 $stmt = $db->prepare("SELECT * FROM Customers WHERE CustomerID = ?");
 $stmt->execute([$userData['customer_id']]);
-$customer = $stmt->fetch(PDO::FETCH_ASSOC);
+$customerProfile = $stmt->fetch(PDO::FETCH_ASSOC);
 
-if (!$customer) {
-    header("Location: ../login/");
+if (!$customerProfile) {
+    header("Location: ../../login/");
     exit();
 }
-
-// Debug customer data
-error_log("Customer Data: " . print_r($customer, true));
 
 $success_message = '';
 $error_message = '';
@@ -62,7 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         // Handle profile image upload
-        $profileImageUrl = $customer['ProfileImageURL'];
+        $profileImageUrl = $customerProfile['ProfileImageURL'];
         if (isset($_FILES['profile_image']) && $_FILES['profile_image']['error'] === UPLOAD_ERR_OK) {
             $allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
             $maxSize = 5 * 1024 * 1024; // 5MB
@@ -105,12 +98,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->execute([$name, $email, $phone, $address, $profileImageUrl, $userData['customer_id']]);
 
         $success_message = 'Profile updated successfully';
-        header("Location: ./");
 
         // Refresh customer data
         $stmt = $db->prepare("SELECT * FROM Customers WHERE CustomerID = ?");
         $stmt->execute([$userData['customer_id']]);
-        $customer = $stmt->fetch(PDO::FETCH_ASSOC);
+        $customerProfile = $stmt->fetch(PDO::FETCH_ASSOC);
     } catch (Exception $e) {
         $error_message = $e->getMessage();
     }
@@ -247,8 +239,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </head>
 
 <body>
-    <?php include '../c_includes/sidebar.php'; ?>
-    <?php include '../c_includes/topbar.php'; ?>
+    <?php include '../../c_includes/sidebar.php'; ?>
+    <?php include '../../c_includes/topbar.php'; ?>
 
     <div class="main-content">
         <div class="edit-profile-container">
@@ -274,10 +266,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                             <form method="POST" enctype="multipart/form-data">
                                 <div class="profile-image-container">
-                                    <img src="<?php echo $customer['ProfileImageURL'] ?: 'assets/images/default-avatar.png'; ?>"
+                                    <img src="<?php echo $customerProfile['ProfileImageURL'] ?: 'assets/images/default-avatar.png'; ?>"
                                         alt="Profile" class="profile-image" id="profilePreview">
                                     <div class="image-upload">
-                                        <input type="file" name="profile_image" id="profileImage" accept="image/*">
+                                        <input type="file" name="profile_image" id="profileImage" accept="image/*" style="display: none;">
                                         <label for="profileImage">
                                             <i class="fas fa-camera"></i> Change Photo
                                         </label>
@@ -287,28 +279,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <div class="mb-3">
                                     <label for="name" class="form-label">Full Name</label>
                                     <input type="text" class="form-control" id="name" name="name"
-                                        value="<?php echo htmlspecialchars($customer['Name'] ?? ''); ?>" required>
+                                        value="<?php echo htmlspecialchars($customerProfile['Name']); ?>" required>
                                 </div>
 
                                 <div class="mb-3">
                                     <label for="email" class="form-label">Email Address</label>
                                     <input type="email" class="form-control" id="email" name="email"
-                                        value="<?php echo htmlspecialchars($customer['Email'] ?? ''); ?>">
+                                        value="<?php echo htmlspecialchars($customerProfile['Email']); ?>">
                                 </div>
 
                                 <div class="mb-3">
                                     <label for="phone" class="form-label">Phone Number</label>
                                     <input type="tel" class="form-control" id="phone" name="phone"
-                                        value="<?php echo htmlspecialchars($customer['Contact'] ?? ''); ?>" required>
+                                        value="<?php echo htmlspecialchars($customerProfile['Contact']); ?>" required>
                                 </div>
 
                                 <div class="mb-3">
                                     <label for="address" class="form-label">Address</label>
-                                    <textarea class="form-control" id="address" name="address" rows="3"><?php echo htmlspecialchars($customer['Address'] ?? ''); ?></textarea>
+                                    <textarea class="form-control" id="address" name="address" rows="3"><?php echo htmlspecialchars($customerProfile['Address']); ?></textarea>
                                 </div>
 
                                 <div class="d-flex justify-content-between align-items-center">
-                                    <a href="profile.php" class="btn btn-outline-secondary">
+                                    <a href="../" class="btn btn-outline-secondary">
                                         <i class="fas fa-arrow-left"></i> Back to Profile
                                     </a>
                                     <button type="submit" class="btn btn-save">
