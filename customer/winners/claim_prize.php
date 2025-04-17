@@ -62,18 +62,41 @@ if ($winner['UserID'] != $userData['customer_id']) {
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
+        // Validate required fields
+        if (empty($_POST['delivery_address']) || empty($_POST['delivery_date'])) {
+            throw new Exception("Please fill in all required fields.");
+        }
+
+        // Validate delivery date is not in the past
+        $delivery_date = new DateTime($_POST['delivery_date']);
+        $today = new DateTime();
+        if ($delivery_date < $today) {
+            throw new Exception("Delivery date cannot be in the past.");
+        }
+
         // Start transaction
         $db->beginTransaction();
 
-        // Update winner status
+        // Update winner status and delivery details
         $stmt = $db->prepare("
             UPDATE Winners 
             SET Status = 'Claimed', 
                 VerifiedAt = CURRENT_TIMESTAMP,
-                AdminID = (SELECT AdminID FROM Admins WHERE Role = 'SuperAdmin' LIMIT 1)
-            WHERE WinnerID = ?
+                AdminID = (SELECT AdminID FROM Admins WHERE Role = 'SuperAdmin' LIMIT 1),
+                DeliveryAddress = ?,
+                PreferredDeliveryDate = ?
+            WHERE WinnerID = ? AND Status = 'Pending'
         ");
-        $stmt->execute([$winner_id]);
+
+        $result = $stmt->execute([
+            $_POST['delivery_address'],
+            $_POST['delivery_date'],
+            $winner_id
+        ]);
+
+        if (!$result || $stmt->rowCount() === 0) {
+            throw new Exception("Failed to update winner status. The prize may have already been claimed or expired.");
+        }
 
         // Create notification for admin
         $stmt = $db->prepare("
@@ -92,8 +115,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     } catch (Exception $e) {
         // Rollback transaction on error
-        $db->rollBack();
-        $error = "An error occurred while processing your claim. Please try again.";
+        if ($db->inTransaction()) {
+            $db->rollBack();
+        }
+        $error = $e->getMessage();
+        // Log the error for debugging
+        error_log("Prize claim error: " . $e->getMessage() . " for winner_id: " . $winner_id);
     }
 }
 ?>

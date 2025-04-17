@@ -1,4 +1,3 @@
-
 -- 1. Admins Table (Parent Table)
 CREATE TABLE Admins (
     AdminID INT AUTO_INCREMENT PRIMARY KEY,
@@ -205,7 +204,10 @@ CREATE TABLE Winners (
     AdminID INT DEFAULT NULL,
     SchemeID INT DEFAULT NULL,
     InstallmentID INT DEFAULT NULL,
+    DeliveryAddress TEXT,
+    PreferredDeliveryDate DATE,
     Remarks TEXT,
+    VerifiedAt DATE,
     FOREIGN KEY (AdminID) REFERENCES Admins(AdminID) ON DELETE SET NULL
 );
 
