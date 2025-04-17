@@ -69,6 +69,9 @@ CREATE TABLE Customers (
     PasswordHash VARCHAR(255) NOT NULL,
     Address TEXT,
     ProfileImageURL VARCHAR(255),
+    Gender ENUM('Male', 'Female', 'Other') DEFAULT NULL,
+    DateOfBirth DATE DEFAULT NULL,
+
     BankAccountName VARCHAR(255),
     BankAccountNumber VARCHAR(50),
     IFSCCode VARCHAR(20),
