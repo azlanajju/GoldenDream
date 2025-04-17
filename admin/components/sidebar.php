@@ -175,15 +175,15 @@
             margin-left: var(--sidebar-width);
             transition: margin var(--transition-speed) ease, width var(--transition-speed) ease;
             min-height: 100vh;
-            padding: 20px;
-            width: calc(100% - var(--sidebar-width));
+            /* padding: 20px; */
+            width: calc(95% - var(--sidebar-width));
             position: absolute;
             right: a;
         }
 
         body.sidebar-collapsed .content-wrapper {
             margin-left: var(--sidebar-collapsed-width);
-            width: calc(100% - var(--sidebar-collapsed-width));
+            width: calc(95% - var(--sidebar-collapsed-width));
         }
 
         /* Badge for notifications */

@@ -311,7 +311,7 @@ $installments = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         <div class="col-md-6 mb-4">
                             <div class="installment-card">
                                 <?php if ($installment['ImageURL']): ?>
-                                    <img src="<?php echo htmlspecialchars($installment['ImageURL']); ?>"
+                                    <img src="../../<?php echo htmlspecialchars($installment['ImageURL']); ?>"
                                         alt="Installment <?php echo $installment['InstallmentNumber']; ?>"
                                         class="installment-image">
                                 <?php endif; ?>

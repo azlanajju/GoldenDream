@@ -12,109 +12,13 @@ require_once("../../config/config.php");
 $database = new Database();
 $conn = $database->getConnection();
 
-// Check if scheme ID is provided
-if (!isset($_GET['id']) || empty($_GET['id'])) {
-    $_SESSION['error_message'] = "No scheme specified.";
-    header("Location: index.php");
-    exit();
-}
+$errors = [];
+$success = false;
 
-$schemeId = intval($_GET['id']);
+// Get scheme ID from URL
+$schemeId = isset($_GET['id']) ? intval($_GET['id']) : 0;
 
-// Handle form submission for updating scheme
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_scheme'])) {
-    $schemeName = trim($_POST['scheme_name']);
-    $schemeType = trim($_POST['scheme_type']);
-    $schemeAmount = floatval($_POST['scheme_amount']);
-    $schemeDuration = intval($_POST['scheme_duration']);
-    $installmentFrequency = trim($_POST['installment_frequency']);
-    $installmentAmount = floatval($_POST['installment_amount']);
-    $monthlyAmount = floatval($_POST['monthly_amount']);
-    $minSubscribers = intval($_POST['min_subscribers']);
-    $maxSubscribers = intval($_POST['max_subscribers']);
-    $lateFee = floatval($_POST['late_fee']);
-    $description = trim($_POST['description']);
-
-    // Validate inputs
-    $errors = [];
-
-    if (empty($schemeName)) {
-        $errors[] = "Scheme name is required.";
-    }
-
-    if (empty($schemeType)) {
-        $errors[] = "Scheme type is required.";
-    }
-
-    if ($schemeAmount <= 0) {
-        $errors[] = "Scheme amount must be greater than zero.";
-    }
-
-    if ($schemeDuration <= 0) {
-        $errors[] = "Scheme duration must be greater than zero.";
-    }
-
-    if (empty($errors)) {
-        try {
-            // Begin transaction
-            $conn->beginTransaction();
-
-            // Update scheme
-            $stmt = $conn->prepare("
-                UPDATE Schemes 
-                SET SchemeName = ?, 
-                    SchemeType = ?, 
-                    SchemeAmount = ?, 
-                    SchemeDuration = ?, 
-                    InstallmentFrequency = ?, 
-                    InstallmentAmount = ?, 
-                    MonthlyAmount = ?, 
-                    MinSubscribers = ?, 
-                    MaxSubscribers = ?, 
-                    LateFee = ?, 
-                    Description = ?,
-                    UpdatedAt = NOW()
-                WHERE SchemeID = ?
-            ");
-
-            $stmt->execute([
-                $schemeName,
-                $schemeType,
-                $schemeAmount,
-                $schemeDuration,
-                $installmentFrequency,
-                $installmentAmount,
-                $monthlyAmount,
-                $minSubscribers,
-                $maxSubscribers,
-                $lateFee,
-                $description,
-                $schemeId
-            ]);
-
-            // Log the activity
-            $stmt = $conn->prepare("
-                INSERT INTO ActivityLogs (UserID, UserType, Action, IPAddress) 
-                VALUES (?, 'Admin', ?, ?)
-            ");
-            $stmt->execute([
-                $_SESSION['admin_id'],
-                "Updated scheme: $schemeName",
-                $_SERVER['REMOTE_ADDR']
-            ]);
-
-            $conn->commit();
-            $_SESSION['success_message'] = "Scheme updated successfully.";
-            header("Location: view.php?id=$schemeId");
-            exit();
-        } catch (PDOException $e) {
-            $conn->rollBack();
-            $errors[] = "Database error: " . $e->getMessage();
-        }
-    }
-}
-
-// Get scheme details
+// Get existing scheme data
 try {
     $stmt = $conn->prepare("SELECT * FROM Schemes WHERE SchemeID = ?");
     $stmt->execute([$schemeId]);
@@ -125,10 +29,167 @@ try {
         header("Location: index.php");
         exit();
     }
+
+    // Get existing installments
+    $stmt = $conn->prepare("SELECT * FROM Installments WHERE SchemeID = ? ORDER BY InstallmentNumber");
+    $stmt->execute([$schemeId]);
+    $existingInstallments = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
-    $_SESSION['error_message'] = "Database error: " . $e->getMessage();
+    $_SESSION['error_message'] = "Failed to load scheme data: " . $e->getMessage();
     header("Location: index.php");
     exit();
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    try {
+        $conn->beginTransaction();
+
+        // Validate scheme details
+        $schemeName = trim($_POST['scheme_name'] ?? '');
+        $description = trim($_POST['description'] ?? '');
+        $monthlyPayment = floatval($_POST['monthly_payment'] ?? 0);
+        $totalPayments = intval($_POST['total_payments'] ?? 0);
+
+        // Basic validation
+        if (empty($schemeName)) {
+            $errors['scheme_name'] = 'Scheme name is required';
+        } else {
+            // Check if scheme name already exists (excluding current scheme)
+            $stmt = $conn->prepare("SELECT SchemeID FROM Schemes WHERE SchemeName = ? AND SchemeID != ?");
+            $stmt->execute([$schemeName, $schemeId]);
+            if ($stmt->rowCount() > 0) {
+                $errors['scheme_name'] = 'Scheme name already exists';
+            }
+        }
+
+        if ($monthlyPayment <= 0) {
+            $errors['monthly_payment'] = 'Monthly payment must be greater than 0';
+        }
+
+        if ($totalPayments <= 0) {
+            $errors['total_payments'] = 'Total payments must be greater than 0';
+        }
+
+        // Validate installments
+        $installments = [];
+        if (isset($_POST['installment'])) {
+            foreach ($_POST['installment'] as $index => $installment) {
+                $installmentName = trim($installment['name'] ?? '');
+                $installmentNumber = intval($installment['number'] ?? 0);
+                $amount = floatval($installment['amount'] ?? 0);
+                $drawDate = trim($installment['draw_date'] ?? '');
+                $benefits = trim($installment['benefits'] ?? '');
+
+                if (empty($installmentName)) {
+                    $errors["installment_$index"] = 'Installment name is required';
+                }
+
+                if ($amount <= 0) {
+                    $errors["installment_amount_$index"] = 'Amount must be greater than 0';
+                }
+
+                if (empty($drawDate)) {
+                    $errors["installment_date_$index"] = 'Draw date is required';
+                }
+
+                // Store valid installment
+                if (
+                    !isset($errors["installment_$index"]) &&
+                    !isset($errors["installment_amount_$index"]) &&
+                    !isset($errors["installment_date_$index"])
+                ) {
+                    $installments[] = [
+                        'name' => $installmentName,
+                        'number' => $installmentNumber,
+                        'amount' => $amount,
+                        'draw_date' => $drawDate,
+                        'benefits' => $benefits,
+                        'image' => $_FILES['installment']['name'][$index] ?? null
+                    ];
+                }
+            }
+        }
+
+        if (empty($installments)) {
+            $errors['installments'] = 'At least one installment is required';
+        }
+
+        if (empty($errors)) {
+            // Update scheme
+            $stmt = $conn->prepare("
+                UPDATE Schemes 
+                SET SchemeName = ?, Description = ?, MonthlyPayment = ?, TotalPayments = ? 
+                WHERE SchemeID = ?
+            ");
+            $stmt->execute([$schemeName, $description, $monthlyPayment, $totalPayments, $schemeId]);
+
+            // Process installments
+            $uploadDir = '../../uploads/schemes/';
+            if (!file_exists($uploadDir)) {
+                mkdir($uploadDir, 0777, true);
+            }
+
+            // Delete existing installments
+            $stmt = $conn->prepare("DELETE FROM Installments WHERE SchemeID = ?");
+            $stmt->execute([$schemeId]);
+
+            // Insert new installments
+            $stmt = $conn->prepare("
+                INSERT INTO Installments (
+                    SchemeID, InstallmentName, InstallmentNumber, 
+                    Amount, DrawDate, Benefits, ImageURL, Status
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, 'Active')
+            ");
+
+            foreach ($installments as $index => $installment) {
+                $imageURL = null;
+
+                // Handle image upload
+                if (
+                    isset($_FILES['installment']['tmp_name'][$index]) &&
+                    $_FILES['installment']['error'][$index] === UPLOAD_ERR_OK
+                ) {
+                    $fileName = uniqid() . '_' . basename($_FILES['installment']['name'][$index]);
+                    $targetPath = $uploadDir . $fileName;
+
+                    if (move_uploaded_file($_FILES['installment']['tmp_name'][$index], $targetPath)) {
+                        $imageURL = 'uploads/schemes/' . $fileName;
+                    }
+                }
+
+                $stmt->execute([
+                    $schemeId,
+                    $installment['name'],
+                    $installment['number'],
+                    $installment['amount'],
+                    $installment['draw_date'],
+                    $installment['benefits'],
+                    $imageURL
+                ]);
+            }
+
+            // Log activity
+            $stmt = $conn->prepare("
+                INSERT INTO ActivityLogs (UserID, UserType, Action, IPAddress) 
+                VALUES (?, 'Admin', ?, ?)
+            ");
+            $stmt->execute([
+                $_SESSION['admin_id'],
+                "Updated scheme: $schemeName with " . count($installments) . " installments",
+                $_SERVER['REMOTE_ADDR']
+            ]);
+
+            $conn->commit();
+            $_SESSION['success_message'] = "Scheme updated successfully with " . count($installments) . " installments.";
+            header("Location: index.php");
+            exit();
+        } else {
+            $conn->rollBack();
+        }
+    } catch (PDOException $e) {
+        $conn->rollBack();
+        $errors['general'] = "Failed to update scheme: " . $e->getMessage();
+    }
 }
 
 include("../components/sidebar.php");
@@ -147,27 +208,26 @@ include("../components/topbar.php");
     <link rel="stylesheet" href="../assets/css/admin.css">
     <style>
         .form-container {
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-            padding: 25px;
-            margin-bottom: 30px;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
         }
 
-        .form-title {
-            font-size: 1.5rem;
+        .scheme-section {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .section-title {
+            font-size: 1.2em;
             font-weight: 600;
             color: #2c3e50;
             margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 1px solid #eaeaea;
-        }
-
-        .form-row {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #ecf0f1;
         }
 
         .form-group {
@@ -178,89 +238,126 @@ include("../components/topbar.php");
             display: block;
             margin-bottom: 8px;
             font-weight: 500;
-            color: #2c3e50;
+            color: #34495e;
         }
 
         .form-control {
             width: 100%;
-            padding: 12px;
+            padding: 10px;
             border: 1px solid #ddd;
-            border-radius: 8px;
+            border-radius: 6px;
             font-size: 14px;
-            transition: all 0.3s ease;
+            transition: border-color 0.3s ease;
         }
 
         .form-control:focus {
             border-color: #3498db;
-            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
             outline: none;
         }
 
-        .text-muted {
-            color: #7f8c8d;
-            font-size: 0.85rem;
-            margin-top: 5px;
+        .installment-container {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            position: relative;
         }
 
-        textarea.form-control {
-            min-height: 120px;
-            resize: vertical;
+        .installment-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .installment-title {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .remove-installment {
+            color: #e74c3c;
+            cursor: pointer;
+            padding: 5px;
+            transition: all 0.3s ease;
+        }
+
+        .remove-installment:hover {
+            transform: scale(1.1);
+        }
+
+        .installment-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .add-installment-btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .add-installment-btn:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
         }
 
         .btn-group {
             display: flex;
-            gap: 15px;
+            gap: 10px;
             margin-top: 30px;
         }
 
-        .btn {
-            padding: 12px 25px;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            border: none;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, #3498db, #2980b9);
+        .btn-submit {
+            background: linear-gradient(135deg, #3a7bd5, #00d2ff);
             color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
         }
 
-        .btn-primary:hover {
-            background: linear-gradient(135deg, #2980b9, #2573a7);
+        .btn-submit:hover {
             transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
 
-        .btn-secondary {
-            background: #ecf0f1;
-            color: #2c3e50;
+        .btn-cancel {
+            background: #f8f9fa;
+            color: #333;
+            border: 1px solid #ddd;
+            padding: 12px 25px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
         }
 
-        .btn-secondary:hover {
-            background: #dde4e6;
-            transform: translateY(-2px);
+        .btn-cancel:hover {
+            background: #e9ecef;
         }
 
-        .alert {
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
+        .error-message {
+            color: #e74c3c;
+            font-size: 12px;
+            margin-top: 5px;
         }
 
-        .alert-danger {
-            background-color: rgba(231, 76, 60, 0.1);
-            border-left: 4px solid #e74c3c;
-            color: #c0392b;
-        }
-
-        .alert-danger ul {
-            margin: 5px 0 0 20px;
-            padding: 0;
+        .image-preview {
+            max-width: 150px;
+            margin-top: 10px;
+            border-radius: 6px;
+            display: none;
         }
     </style>
 </head>
@@ -269,173 +366,204 @@ include("../components/topbar.php");
     <div class="content-wrapper">
         <div class="page-header">
             <h1 class="page-title">Edit Scheme</h1>
-            <a href="view.php?id=<?php echo $schemeId; ?>" class="action-btn edit-btn">
-                <i class="fas fa-arrow-left"></i> Back to View
-            </a>
         </div>
 
-        <?php if (!empty($errors)): ?>
-            <div class="alert alert-danger">
-                <strong>Please fix the following errors:</strong>
-                <ul>
-                    <?php foreach ($errors as $error): ?>
-                        <li><?php echo $error; ?></li>
-                    <?php endforeach; ?>
-                </ul>
-            </div>
-        <?php endif; ?>
+        <form action="" method="POST" enctype="multipart/form-data" class="form-container">
+            <?php if (isset($errors['general'])): ?>
+                <div class="alert alert-danger"><?php echo $errors['general']; ?></div>
+            <?php endif; ?>
 
-        <div class="form-container">
-            <h2 class="form-title">Edit Scheme Details</h2>
+            <div class="scheme-section">
+                <div class="section-title">Scheme Details</div>
 
-            <form method="POST" action="">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="scheme_name">Scheme Name *</label>
-                        <input type="text" id="scheme_name" name="scheme_name" class="form-control"
-                            value="<?php echo htmlspecialchars($scheme['SchemeName']); ?>" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="scheme_type">Scheme Type *</label>
-                        <select id="scheme_type" name="scheme_type" class="form-control" required>
-                            <option value="">Select Scheme Type</option>
-                            <option value="Gold" <?php echo $scheme['SchemeType'] === 'Gold' ? 'selected' : ''; ?>>Gold</option>
-                            <option value="Silver" <?php echo $scheme['SchemeType'] === 'Silver' ? 'selected' : ''; ?>>Silver</option>
-                            <option value="Diamond" <?php echo $scheme['SchemeType'] === 'Diamond' ? 'selected' : ''; ?>>Diamond</option>
-                            <option value="Platinum" <?php echo $scheme['SchemeType'] === 'Platinum' ? 'selected' : ''; ?>>Platinum</option>
-                            <option value="General" <?php echo $scheme['SchemeType'] === 'General' ? 'selected' : ''; ?>>General</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="scheme_amount">Scheme Amount (₹) *</label>
-                        <input type="number" id="scheme_amount" name="scheme_amount" class="form-control"
-                            value="<?php echo $scheme['SchemeAmount']; ?>" min="1" step="0.01" required>
-                        <small class="text-muted">Total value of the scheme</small>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="scheme_duration">Scheme Duration (Months) *</label>
-                        <input type="number" id="scheme_duration" name="scheme_duration" class="form-control"
-                            value="<?php echo $scheme['SchemeDuration']; ?>" min="1" required>
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="installment_frequency">Installment Frequency *</label>
-                        <select id="installment_frequency" name="installment_frequency" class="form-control" required>
-                            <option value="Monthly" <?php echo $scheme['InstallmentFrequency'] === 'Monthly' ? 'selected' : ''; ?>>Monthly</option>
-                            <option value="Quarterly" <?php echo $scheme['InstallmentFrequency'] === 'Quarterly' ? 'selected' : ''; ?>>Quarterly</option>
-                            <option value="Half-Yearly" <?php echo $scheme['InstallmentFrequency'] === 'Half-Yearly' ? 'selected' : ''; ?>>Half-Yearly</option>
-                            <option value="Weekly" <?php echo $scheme['InstallmentFrequency'] === 'Weekly' ? 'selected' : ''; ?>>Weekly</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="installment_amount">Installment Amount (₹) *</label>
-                        <input type="number" id="installment_amount" name="installment_amount" class="form-control"
-                            value="<?php echo $scheme['InstallmentAmount']; ?>" min="1" step="0.01" required>
-                        <small class="text-muted">Amount to be paid per installment</small>
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="monthly_amount">Monthly Amount (₹) *</label>
-                        <input type="number" id="monthly_amount" name="monthly_amount" class="form-control"
-                            value="<?php echo $scheme['MonthlyAmount']; ?>" min="1" step="0.01" required>
-                        <small class="text-muted">Monthly contribution amount</small>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="late_fee">Late Fee (₹)</label>
-                        <input type="number" id="late_fee" name="late_fee" class="form-control"
-                            value="<?php echo $scheme['LateFee']; ?>" min="0" step="0.01">
-                        <small class="text-muted">Fee charged for late payments</small>
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="min_subscribers">Minimum Subscribers</label>
-                        <input type="number" id="min_subscribers" name="min_subscribers" class="form-control"
-                            value="<?php echo $scheme['MinSubscribers']; ?>" min="0">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="max_subscribers">Maximum Subscribers</label>
-                        <input type="number" id="max_subscribers" name="max_subscribers" class="form-control"
-                            value="<?php echo $scheme['MaxSubscribers']; ?>" min="0">
-                        <small class="text-muted">0 means unlimited</small>
-                    </div>
+                <div class="form-group">
+                    <label for="scheme_name">Scheme Name *</label>
+                    <input type="text" id="scheme_name" name="scheme_name" class="form-control"
+                        value="<?php echo htmlspecialchars($scheme['SchemeName']); ?>" required>
+                    <?php if (isset($errors['scheme_name'])): ?>
+                        <div class="error-message"><?php echo $errors['scheme_name']; ?></div>
+                    <?php endif; ?>
                 </div>
 
                 <div class="form-group">
                     <label for="description">Description</label>
-                    <textarea id="description" name="description" class="form-control"><?php echo htmlspecialchars($scheme['Description']); ?></textarea>
-                    <small class="text-muted">Provide details about the scheme, benefits, terms, etc.</small>
+                    <textarea id="description" name="description" class="form-control" rows="4"><?php echo htmlspecialchars($scheme['Description']); ?></textarea>
                 </div>
 
-                <div class="btn-group">
-                    <button type="submit" name="update_scheme" class="btn btn-primary">
-                        <i class="fas fa-save"></i> Update Scheme
-                    </button>
-                    <a href="view.php?id=<?php echo $schemeId; ?>" class="btn btn-secondary">
-                        <i class="fas fa-times"></i> Cancel
-                    </a>
+                <div class="form-group">
+                    <label for="monthly_payment">Monthly Payment (₹) *</label>
+                    <input type="number" id="monthly_payment" name="monthly_payment" class="form-control"
+                        value="<?php echo htmlspecialchars($scheme['MonthlyPayment']); ?>" required step="0.01">
+                    <?php if (isset($errors['monthly_payment'])): ?>
+                        <div class="error-message"><?php echo $errors['monthly_payment']; ?></div>
+                    <?php endif; ?>
                 </div>
-            </form>
-        </div>
+
+                <div class="form-group">
+                    <label for="total_payments">Total Number of Payments *</label>
+                    <input type="number" id="total_payments" name="total_payments" class="form-control"
+                        value="<?php echo htmlspecialchars($scheme['TotalPayments']); ?>" required min="1">
+                    <?php if (isset($errors['total_payments'])): ?>
+                        <div class="error-message"><?php echo $errors['total_payments']; ?></div>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+            <div class="scheme-section">
+                <div class="section-title">Installments</div>
+
+                <div id="installments-container">
+                    <?php foreach ($existingInstallments as $installment): ?>
+                        <div class="installment-container">
+                            <div class="installment-header">
+                                <div class="installment-title">Installment #<?php echo $installment['InstallmentNumber']; ?></div>
+                                <i class="fas fa-times remove-installment" onclick="removeInstallment(this)"></i>
+                            </div>
+
+                            <div class="installment-grid">
+                                <div class="form-group">
+                                    <label>Installment Name *</label>
+                                    <input type="text" name="installment[<?php echo $installment['InstallmentNumber'] - 1; ?>][name]"
+                                        class="form-control" required value="<?php echo htmlspecialchars($installment['InstallmentName']); ?>">
+                                </div>
+
+                                <div class="form-group">
+                                    <label>Installment Number *</label>
+                                    <input type="number" name="installment[<?php echo $installment['InstallmentNumber'] - 1; ?>][number]"
+                                        class="form-control" required min="1" value="<?php echo $installment['InstallmentNumber']; ?>">
+                                </div>
+
+                                <div class="form-group">
+                                    <label>Amount (₹) *</label>
+                                    <input type="number" name="installment[<?php echo $installment['InstallmentNumber'] - 1; ?>][amount]"
+                                        class="form-control" required step="0.01" value="<?php echo $installment['Amount']; ?>">
+                                </div>
+
+                                <div class="form-group">
+                                    <label>Draw Date *</label>
+                                    <input type="date" name="installment[<?php echo $installment['InstallmentNumber'] - 1; ?>][draw_date]"
+                                        class="form-control" required value="<?php echo $installment['DrawDate']; ?>">
+                                </div>
+
+                                <div class="form-group">
+                                    <label>Benefits</label>
+                                    <textarea name="installment[<?php echo $installment['InstallmentNumber'] - 1; ?>][benefits]"
+                                        class="form-control" rows="2"><?php echo htmlspecialchars($installment['Benefits']); ?></textarea>
+                                </div>
+
+                                <div class="form-group">
+                                    <label>Image</label>
+                                    <input type="file" name="installment[<?php echo $installment['InstallmentNumber'] - 1; ?>]"
+                                        class="form-control" accept="image/*" onchange="previewImage(this)">
+                                    <?php if ($installment['ImageURL']): ?>
+                                        <img src="../../<?php echo $installment['ImageURL']; ?>" class="image-preview" style="display: block;">
+                                    <?php else: ?>
+                                        <img class="image-preview">
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+
+                <button type="button" class="add-installment-btn" onclick="addInstallment()">
+                    <i class="fas fa-plus"></i> Add Installment
+                </button>
+
+                <?php if (isset($errors['installments'])): ?>
+                    <div class="error-message"><?php echo $errors['installments']; ?></div>
+                <?php endif; ?>
+            </div>
+
+            <div class="btn-group">
+                <button type="submit" class="btn-submit">
+                    <i class="fas fa-save"></i> Update Scheme
+                </button>
+                <a href="index.php" class="btn-cancel">
+                    <i class="fas fa-times"></i> Cancel
+                </a>
+            </div>
+        </form>
     </div>
 
     <script>
-        // Auto-calculate monthly amount based on scheme amount and duration
-        document.addEventListener('DOMContentLoaded', function() {
-            const schemeAmountInput = document.getElementById('scheme_amount');
-            const schemeDurationInput = document.getElementById('scheme_duration');
-            const monthlyAmountInput = document.getElementById('monthly_amount');
-            const installmentFrequencySelect = document.getElementById('installment_frequency');
-            const installmentAmountInput = document.getElementById('installment_amount');
+        let installmentCount = <?php echo count($existingInstallments); ?>;
 
-            function calculateMonthlyAmount() {
-                const schemeAmount = parseFloat(schemeAmountInput.value) || 0;
-                const schemeDuration = parseInt(schemeDurationInput.value) || 1;
+        function addInstallment() {
+            const container = document.getElementById('installments-container');
+            const template = `
+                <div class="installment-container">
+                    <div class="installment-header">
+                        <div class="installment-title">Installment #${installmentCount + 1}</div>
+                        <i class="fas fa-times remove-installment" onclick="removeInstallment(this)"></i>
+                    </div>
+                    
+                    <div class="installment-grid">
+                        <div class="form-group">
+                            <label>Installment Name *</label>
+                            <input type="text" name="installment[${installmentCount}][name]" class="form-control" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Installment Number *</label>
+                            <input type="number" name="installment[${installmentCount}][number]" class="form-control" 
+                                   required min="1" value="${installmentCount + 1}">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Amount (₹) *</label>
+                            <input type="number" name="installment[${installmentCount}][amount]" class="form-control" 
+                                   required step="0.01">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Draw Date *</label>
+                            <input type="date" name="installment[${installmentCount}][draw_date]" class="form-control" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Benefits</label>
+                            <textarea name="installment[${installmentCount}][benefits]" class="form-control" rows="2"></textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Image</label>
+                            <input type="file" name="installment[${installmentCount}]" class="form-control" accept="image/*"
+                                   onchange="previewImage(this)">
+                            <img class="image-preview">
+                        </div>
+                    </div>
+                </div>
+            `;
 
-                if (schemeAmount > 0 && schemeDuration > 0) {
-                    const monthlyAmount = schemeAmount / schemeDuration;
-                    monthlyAmountInput.value = monthlyAmount.toFixed(2);
+            container.insertAdjacentHTML('beforeend', template);
+            installmentCount++;
+        }
 
-                    // Also update installment amount based on frequency
-                    calculateInstallmentAmount();
+        function removeInstallment(element) {
+            element.closest('.installment-container').remove();
+            updateInstallmentNumbers();
+        }
+
+        function updateInstallmentNumbers() {
+            const containers = document.querySelectorAll('.installment-container');
+            containers.forEach((container, index) => {
+                container.querySelector('.installment-title').textContent = `Installment #${index + 1}`;
+                container.querySelector('input[type="number"]').value = index + 1;
+            });
+        }
+
+        function previewImage(input) {
+            const preview = input.nextElementSibling;
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
                 }
+                reader.readAsDataURL(input.files[0]);
             }
-
-            function calculateInstallmentAmount() {
-                const monthlyAmount = parseFloat(monthlyAmountInput.value) || 0;
-                const frequency = installmentFrequencySelect.value;
-
-                let installmentAmount = monthlyAmount;
-
-                if (frequency === 'Quarterly') {
-                    installmentAmount = monthlyAmount * 3;
-                } else if (frequency === 'Half-Yearly') {
-                    installmentAmount = monthlyAmount * 6;
-                } else if (frequency === 'Weekly') {
-                    installmentAmount = monthlyAmount / 4; // Approximate weekly amount
-                }
-
-                installmentAmountInput.value = installmentAmount.toFixed(2);
-            }
-
-            schemeAmountInput.addEventListener('input', calculateMonthlyAmount);
-            schemeDurationInput.addEventListener('input', calculateMonthlyAmount);
-            installmentFrequencySelect.addEventListener('change', calculateInstallmentAmount);
-            monthlyAmountInput.addEventListener('input', calculateInstallmentAmount);
-        });
+        }
     </script>
 </body>
 

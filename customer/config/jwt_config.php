@@ -35,14 +35,16 @@ function generateJWTToken($payload)
 }
 
 // Function to set JWT cookie
-function setJWTCookie($token, $expire)
+function setJWTCookie($token, $expiry)
 {
-    setcookie('jwt_token', $token, [
-        'expires' => $expire,
+    $options = [
+        'expires' => $expiry,
         'path' => '/',
-        'httponly' => true,
+        'domain' => '',
         'secure' => true,
-        'samesite' => 'Strict',
-        'max-age' => JWT_EXPIRE_TIME // Set max-age to 30 days
-    ]);
+        'httponly' => true,
+        'samesite' => 'Strict'
+    ];
+
+    setcookie('jwt_token', $token, $options);
 }

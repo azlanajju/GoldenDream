@@ -11,7 +11,7 @@ $database = new Database();
 $db = $database->getConnection();
 $stmt = $db->prepare("SELECT * FROM Customers WHERE CustomerID = ?");
 $stmt->execute([$userData['customer_id']]);
-$customer = $stmt->fetch(PDO::FETCH_ASSOC);
+$customerBank = $stmt->fetch(PDO::FETCH_ASSOC);
 
 $success_message = '';
 $error_message = '';
@@ -64,7 +64,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Refresh customer data
         $stmt = $db->prepare("SELECT * FROM Customers WHERE CustomerID = ?");
         $stmt->execute([$userData['customer_id']]);
-        $customer = $stmt->fetch(PDO::FETCH_ASSOC);
+        $customerBank = $stmt->fetch(PDO::FETCH_ASSOC);
     } catch (Exception $e) {
         $error_message = $e->getMessage();
     }
@@ -271,31 +271,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <div class="form-group">
                                     <label for="bank_name" class="form-label">Bank Name</label>
                                     <input type="text" class="form-control" id="bank_name" name="bank_name"
-                                        value="<?php echo htmlspecialchars($customer['BankName']); ?>" required>
+                                        value="<?php echo htmlspecialchars($customerBank['BankName']); ?>" required>
                                 </div>
 
                                 <div class="form-group">
                                     <label for="account_name" class="form-label">Account Holder Name</label>
                                     <input type="text" class="form-control" id="account_name" name="account_name"
-                                        value="<?php echo htmlspecialchars($customer['BankAccountName']); ?>" required>
+                                        value="<?php echo htmlspecialchars($customerBank['BankAccountName']); ?>" required>
                                 </div>
 
                                 <div class="form-group">
                                     <label for="account_number" class="form-label">Account Number</label>
                                     <input type="text" class="form-control" id="account_number" name="account_number"
-                                        value="<?php echo htmlspecialchars($customer['BankAccountNumber']); ?>" required>
+                                        value="<?php echo htmlspecialchars($customerBank['BankAccountNumber']); ?>" required>
                                     <div class="form-text">Enter 9-18 digit account number</div>
                                 </div>
 
                                 <div class="form-group">
                                     <label for="ifsc_code" class="form-label">IFSC Code</label>
                                     <input type="text" class="form-control" id="ifsc_code" name="ifsc_code"
-                                        value="<?php echo htmlspecialchars($customer['IFSCCode']); ?>" required>
+                                        value="<?php echo htmlspecialchars($customerBank['IFSCCode']); ?>" required>
                                     <div class="form-text">Enter 11 character IFSC code</div>
                                 </div>
 
                                 <div class="d-flex justify-content-between align-items-center">
-                                    <a href="profile.php" class="btn btn-outline-secondary">
+                                    <a href="./" class="btn btn-outline-secondary">
                                         <i class="fas fa-arrow-left me-2"></i> Back
                                     </a>
                                     <button type="submit" class="btn btn-save">

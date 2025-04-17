@@ -52,6 +52,7 @@ CREATE TABLE Promoters (
     BankName VARCHAR(255),
     PaymentCodeCounter INT DEFAULT 0,
     ParentPromoterID  INT DEFAULT NULL,
+    TeamID VARCHAR(20),
     Status ENUM('Active', 'Inactive') DEFAULT 'Active',
     CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UpdatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -74,6 +75,7 @@ CREATE TABLE Customers (
     BankName VARCHAR(255),
     PromoterID INT,
     ReferredBy  VARCHAR(50), 
+    TeamID VARCHAR(20),
     Status ENUM('Active', 'Inactive', 'Suspended') DEFAULT 'Active',
     CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UpdatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

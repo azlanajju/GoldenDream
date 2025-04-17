@@ -24,18 +24,95 @@
             align-items: center;
             justify-content: center;
             font-family: 'Inter', sans-serif;
+            padding: 2rem;
+        }
+
+        .signup-wrapper {
+            display: flex;
+            align-items: stretch;
+            gap: 2rem;
+            max-width: 1200px;
+            width: 100%;
+        }
+
+        .info-panel {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 2.5rem;
+            width: 100%;
+            max-width: 400px;
+            border: 1px solid var(--border-color);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .info-panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--accent-green), #1e6e59);
+        }
+
+        .info-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            color: var(--text-primary);
+        }
+
+        .info-icon {
+            background: rgba(47, 155, 127, 0.1);
+            color: var(--accent-green);
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+
+        .info-content h3 {
+            color: var(--text-primary);
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .info-content p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin: 0;
+        }
+
+        .info-panel h2 {
+            color: var(--text-primary);
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 2rem;
+            text-align: center;
         }
 
         .signup-container {
             background: var(--card-bg);
             border-radius: 16px;
             box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
-            padding: 40px;
+            padding: 2.5rem;
             width: 100%;
             max-width: 500px;
             border: 1px solid var(--border-color);
             position: relative;
             overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
 
         .signup-container::before {
@@ -48,25 +125,15 @@
             background: linear-gradient(90deg, var(--accent-green), #1e6e59);
         }
 
-        .logo {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
-        .logo h1 {
-            color: var(--accent-green);
-            font-weight: 700;
-            margin-bottom: 10px;
-            font-size: 28px;
-        }
-
-        .logo p {
-            color: var(--text-secondary);
-            font-size: 14px;
+        .signup-container h2 {
+            color: var(--text-primary);
+            font-size: 1.75rem;
+            font-weight: 600;
+            margin-bottom: 2rem;
         }
 
         .form-floating {
-            margin-bottom: 20px;
+            margin-bottom: 1.25rem;
         }
 
         .form-floating label {
@@ -105,10 +172,11 @@
             background: linear-gradient(135deg, var(--accent-green) 0%, #1e6e59 100%);
             border: none;
             border-radius: 8px;
-            padding: 12px;
+            padding: 0.75rem;
             font-weight: 600;
             transition: all 0.3s ease;
             color: white;
+            width: 100%;
         }
 
         .btn-signup:hover {
@@ -134,6 +202,7 @@
 
         .text-center {
             color: var(--text-secondary);
+            margin-top: 1.5rem;
         }
 
         .text-center a {
@@ -148,28 +217,36 @@
             text-decoration: none;
         }
 
-        @media (max-width: 480px) {
-            .signup-container {
-                margin: 20px;
-                padding: 30px 20px;
+        @media (max-width: 992px) {
+            .signup-wrapper {
+                flex-direction: column;
+                align-items: center;
             }
 
-            .logo h1 {
-                font-size: 24px;
+            .info-panel,
+            .signup-container {
+                max-width: 100%;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 1rem;
+            }
+
+            .signup-container,
+            .info-panel {
+                padding: 1.5rem;
             }
         }
     </style>
 </head>
 
 <body>
-    <div class="container">
+    <div class="signup-wrapper">
         <div class="signup-container">
-            <div class="logo">
-                <h1>Golden Dream</h1>
-                <p class="text-muted">Create your account</p>
-            </div>
-
-            <form id="signupForm" action="process_signup.php" method="POST">
+            <h2>Create Account</h2>
+            <form id="signupForm" action="process_signup.php" method="POST" enctype="multipart/form-data">
                 <div class="form-floating">
                     <input type="text" class="form-control" id="fullName" name="fullName" placeholder="Full Name" required>
                     <label for="fullName">Full Name</label>
@@ -199,6 +276,46 @@
                     <p class="mb-0">Already have an account? <a href="../login/" class="text-decoration-none">Login here</a></p>
                 </div>
             </form>
+        </div>
+
+        <div class="info-panel">
+            <h2>Why Join Golden Dream?</h2>
+            <div class="info-item">
+                <div class="info-icon">
+                    <i class="fas fa-gift"></i>
+                </div>
+                <div class="info-content">
+                    <h3>Exciting Prizes</h3>
+                    <p>Win amazing rewards and cash prizes through our monthly draws</p>
+                </div>
+            </div>
+            <div class="info-item">
+                <div class="info-icon">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+                <div class="info-content">
+                    <h3>Secure & Reliable</h3>
+                    <p>Your data and transactions are protected with advanced security measures</p>
+                </div>
+            </div>
+            <div class="info-item">
+                <div class="info-icon">
+                    <i class="fas fa-wallet"></i>
+                </div>
+                <div class="info-content">
+                    <h3>Easy Withdrawals</h3>
+                    <p>Quick and hassle-free withdrawal process for your winnings</p>
+                </div>
+            </div>
+            <div class="info-item">
+                <div class="info-icon">
+                    <i class="fas fa-headset"></i>
+                </div>
+                <div class="info-content">
+                    <h3>24/7 Support</h3>
+                    <p>Our dedicated support team is always ready to help you</p>
+                </div>
+            </div>
         </div>
     </div>
 
