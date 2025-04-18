@@ -3,15 +3,13 @@ require_once '../config/config.php';
 require_once '../config/session_check.php';
 $c_path = "../";
 $current_page = "profile";
+
 // Get user data and validate session
 $userData = checkSession();
 
-// Get customer data
+// Initialize database connection
 $database = new Database();
 $db = $database->getConnection();
-$stmt = $db->prepare("SELECT * FROM Customers WHERE CustomerID = ?");
-$stmt->execute([$userData['customer_id']]);
-$customer = $stmt->fetch(PDO::FETCH_ASSOC);
 
 $success_message = '';
 $error_message = '';
@@ -20,51 +18,38 @@ $error_message = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         // Validate input
-        $bankName = trim($_POST['bank_name']);
-        $accountName = trim($_POST['account_name']);
-        $accountNumber = trim($_POST['account_number']);
-        $ifscCode = trim($_POST['ifsc_code']);
+        $current_password = trim($_POST['current_password']);
+        $new_password = trim($_POST['new_password']);
+        $confirm_password = trim($_POST['confirm_password']);
 
-        if (empty($bankName) || empty($accountName) || empty($accountNumber) || empty($ifscCode)) {
+        if (empty($current_password) || empty($new_password) || empty($confirm_password)) {
             throw new Exception('All fields are required');
         }
 
-        // Validate account number (assuming 9-18 digits)
-        if (!preg_match('/^[0-9]{9,18}$/', $accountNumber)) {
-            throw new Exception('Invalid account number format');
-        }
-
-        // Validate IFSC code (11 characters, alphanumeric)
-        if (!preg_match('/^[A-Z]{4}0[A-Z0-9]{6}$/', strtoupper($ifscCode))) {
-            throw new Exception('Invalid IFSC code format');
-        }
-
-        // Update bank information
-        $stmt = $db->prepare("
-            UPDATE Customers 
-            SET BankName = ?, BankAccountName = ?, BankAccountNumber = ?, IFSCCode = ?
-            WHERE CustomerID = ?
-        ");
-
-        $stmt->execute([
-            $bankName,
-            $accountName,
-            $accountNumber,
-            strtoupper($ifscCode),
-            $userData['customer_id']
-        ]);
-
-        $success_message = 'Bank details updated successfully';
-        echo "<script>setTimeout(() => {
-    window.location.href = './';
-}, 1000);
-</script>";
-
-
-        // Refresh customer data
-        $stmt = $db->prepare("SELECT * FROM Customers WHERE CustomerID = ?");
+        // Verify current password
+        $stmt = $db->prepare("SELECT PasswordHash FROM Customers WHERE CustomerID = ?");
         $stmt->execute([$userData['customer_id']]);
         $customer = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!password_verify($current_password, $customer['PasswordHash'])) {
+            throw new Exception('Current password is incorrect');
+        }
+
+        // Validate new password
+        if (strlen($new_password) < 8) {
+            throw new Exception('New password must be at least 8 characters long');
+        }
+
+        if ($new_password !== $confirm_password) {
+            throw new Exception('New passwords do not match');
+        }
+
+        // Update password
+        $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
+        $stmt = $db->prepare("UPDATE Customers SET PasswordHash = ? WHERE CustomerID = ?");
+        $stmt->execute([$hashed_password, $userData['customer_id']]);
+
+        $success_message = 'Password changed successfully';
     } catch (Exception $e) {
         $error_message = $e->getMessage();
     }
@@ -77,7 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Edit Bank Details - Golden Dream</title>
+    <title>Change Password - Golden Dream</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
@@ -95,19 +80,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             color: var(--text-primary);
         }
 
-        .edit-bank-container {
+        .change-password-container {
             padding: 24px;
             margin-top: 70px;
         }
 
-        .bank-card {
+        .password-card {
             background: var(--card-bg);
             border-radius: 12px;
             padding: 30px;
             border: 1px solid var(--border-color);
         }
 
-        .bank-header {
+        .password-header {
             text-align: center;
             margin-bottom: 30px;
             position: relative;
@@ -115,7 +100,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             border-bottom: 1px solid var(--border-color);
         }
 
-        .bank-icon {
+        .password-icon {
             width: 60px;
             height: 60px;
             background: rgba(47, 155, 127, 0.1);
@@ -128,7 +113,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             font-size: 24px;
         }
 
-        .bank-header h4 {
+        .password-header h4 {
             color: var(--text-primary);
             font-size: 20px;
             font-weight: 500;
@@ -222,12 +207,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         @media (max-width: 768px) {
-            .edit-bank-container {
+            .change-password-container {
                 margin-left: 70px;
                 padding: 16px;
             }
 
-            .bank-card {
+            .password-card {
                 padding: 20px;
             }
         }
@@ -239,16 +224,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <?php include '../c_includes/topbar.php'; ?>
 
     <div class="main-content">
-        <div class="edit-bank-container">
+        <div class="change-password-container">
             <div class="container">
                 <div class="row justify-content-center">
                     <div class="col-md-8">
-                        <div class="bank-card">
-                            <div class="bank-header">
-                                <div class="bank-icon">
-                                    <i class="fas fa-university"></i>
+                        <div class="password-card">
+                            <div class="password-header">
+                                <div class="password-icon">
+                                    <i class="fas fa-key"></i>
                                 </div>
-                                <h4>Edit Bank Details</h4>
+                                <h4>Change Password</h4>
                             </div>
 
                             <?php if ($success_message): ?>
@@ -269,37 +254,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                             <form method="POST">
                                 <div class="form-group">
-                                    <label for="bank_name" class="form-label">Bank Name</label>
-                                    <input type="text" class="form-control" id="bank_name" name="bank_name"
-                                        value="<?php echo htmlspecialchars($customer['BankName']); ?>" required>
+                                    <label for="current_password" class="form-label">Current Password</label>
+                                    <input type="password" class="form-control" id="current_password" name="current_password" required>
                                 </div>
 
                                 <div class="form-group">
-                                    <label for="account_name" class="form-label">Account Holder Name</label>
-                                    <input type="text" class="form-control" id="account_name" name="account_name"
-                                        value="<?php echo htmlspecialchars($customer['BankAccountName']); ?>" required>
+                                    <label for="new_password" class="form-label">New Password</label>
+                                    <input type="password" class="form-control" id="new_password" name="new_password" required>
+                                    <div class="form-text">Password must be at least 8 characters long</div>
                                 </div>
 
                                 <div class="form-group">
-                                    <label for="account_number" class="form-label">Account Number</label>
-                                    <input type="text" class="form-control" id="account_number" name="account_number"
-                                        value="<?php echo htmlspecialchars($customer['BankAccountNumber']); ?>" required>
-                                    <div class="form-text">Enter 9-18 digit account number</div>
-                                </div>
-
-                                <div class="form-group">
-                                    <label for="ifsc_code" class="form-label">IFSC Code</label>
-                                    <input type="text" class="form-control" id="ifsc_code" name="ifsc_code"
-                                        value="<?php echo htmlspecialchars($customer['IFSCCode']); ?>" required>
-                                    <div class="form-text">Enter 11 character IFSC code</div>
+                                    <label for="confirm_password" class="form-label">Confirm New Password</label>
+                                    <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
                                 </div>
 
                                 <div class="d-flex justify-content-between align-items-center">
-                                    <a href="profile.php" class="btn btn-outline-secondary">
+                                    <a href="./" class="btn btn-outline-secondary">
                                         <i class="fas fa-arrow-left me-2"></i> Back
                                     </a>
                                     <button type="submit" class="btn btn-save">
-                                        <i class="fas fa-save me-2"></i> Save Changes
+                                        <i class="fas fa-save me-2"></i> Change Password
                                     </button>
                                 </div>
                             </form>
@@ -311,17 +286,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // Format account number input
-        document.getElementById('account_number').addEventListener('input', function(e) {
-            this.value = this.value.replace(/[^0-9]/g, '');
-        });
-
-        // Format IFSC code input
-        document.getElementById('ifsc_code').addEventListener('input', function(e) {
-            this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
-        });
-    </script>
 </body>
 
 </html>

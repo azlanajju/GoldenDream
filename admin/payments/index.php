@@ -94,30 +94,28 @@ $conditions = [];
 $params = [];
 
 if (!empty($search)) {
-    $conditions[] = "(c.Name LIKE ? OR c.CustomerUniqueID LIKE ? OR c.Contact LIKE ?)";
-    $params[] = "%$search%";
-    $params[] = "%$search%";
-    $params[] = "%$search%";
+    $conditions[] = "(c.Name LIKE :search OR c.CustomerUniqueID LIKE :search OR c.Contact LIKE :search)";
+    $params[':search'] = "%$search%";
 }
 
 if (!empty($status)) {
-    $conditions[] = "p.Status = ?";
-    $params[] = $status;
+    $conditions[] = "p.Status = :status";
+    $params[':status'] = $status;
 }
 
 if (!empty($schemeId)) {
-    $conditions[] = "p.SchemeID = ?";
-    $params[] = $schemeId;
+    $conditions[] = "p.SchemeID = :schemeId";
+    $params[':schemeId'] = $schemeId;
 }
 
 if (!empty($startDate)) {
-    $conditions[] = "DATE(p.SubmittedAt) >= ?";
-    $params[] = $startDate;
+    $conditions[] = "DATE(p.SubmittedAt) >= :startDate";
+    $params[':startDate'] = $startDate;
 }
 
 if (!empty($endDate)) {
-    $conditions[] = "DATE(p.SubmittedAt) <= ?";
-    $params[] = $endDate;
+    $conditions[] = "DATE(p.SubmittedAt) <= :endDate";
+    $params[':endDate'] = $endDate;
 }
 
 $whereClause = !empty($conditions) ? " WHERE " . implode(" AND ", $conditions) : "";
@@ -153,10 +151,12 @@ $query = "
 
 $stmt = $conn->prepare($query);
 
+// Bind the search/filter parameters
 foreach ($params as $key => $value) {
-    $stmt->bindValue($key + 1, $value);
+    $stmt->bindValue($key, $value);
 }
 
+// Bind the pagination parameters
 $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
 $stmt->bindParam(':limit', $recordsPerPage, PDO::PARAM_INT);
 $stmt->execute();
@@ -1019,7 +1019,7 @@ include("../components/topbar.php");
                         <i class="fas fa-file-invoice-dollar"></i>
                         <p>No payments found</p>
                         <?php if (!empty($search) || !empty($status) || !empty($schemeId) || !empty($startDate) || !empty($endDate)): ?>
-                            <a href="index.php" class="btn btn-secondary">Clear Filters</a>
+                            <a href="index.php" class="btn btn-clear-filter">Clear Filters</a>
                         <?php endif; ?>
                     </div>
                 <?php endif; ?>
@@ -1027,6 +1027,23 @@ include("../components/topbar.php");
         </div>
     </div>
 
+    <style>
+            .btn-clear-filter {
+            background: linear-gradient(135deg,white, black);
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all var(--pr_transition);
+            text-decoration: none;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+    </style>
     <!-- Image Modal -->
     <div class="modal" id="imageModal" onclick="hideModal()">
         <span class="close-modal">&times;</span>

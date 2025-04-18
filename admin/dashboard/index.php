@@ -875,7 +875,7 @@ include("../components/topbar.php");
             <div class="recent-payments">
                 <div class="payments-header">
                     <h3 class="payments-title">Recent Payments</h3>
-                    <a href="<?php echo $menuPath; ?>payments.php" class="chart-action">View All</a>
+                    <a href="<?php echo $menuPath; ?>payments" class="chart-action">View All</a>
                 </div>
                 <div class="table-responsive">
                     <table class="payments-table">

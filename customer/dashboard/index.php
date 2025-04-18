@@ -323,7 +323,7 @@ $pending_withdrawals = $stmt->fetch(PDO::FETCH_ASSOC)['pending_withdrawals'];
         <div class="dashboard-container">
             <div class="dashboard-header">
                 <h2><i class="fas fa-chart-line"></i> Dashboard</h2>
-                <p>Welcome back, <?php echo htmlspecialchars($customer['Name']); ?>!</p>
+                <p>Welcome back, <?php echo htmlspecialchars($userData['customer_name']); ?>!</p>
             </div>
 
             <div class="stats-row">

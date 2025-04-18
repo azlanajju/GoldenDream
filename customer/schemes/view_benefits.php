@@ -283,6 +283,68 @@ $installments = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 font-size: 20px;
             }
         }
+
+        .past-due {
+            border-left: 4px solid #FF4C51;
+        }
+
+        .current-month {
+            border-left: 4px solid #2F9B7F;
+        }
+
+        .payment-status {
+            margin: 12px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-secondary);
+        }
+
+        .payment-summary-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 24px;
+            margin: 24px 0;
+            border: 1px solid var(--border-color);
+        }
+
+        .payment-summary-card h4 {
+            color: var(--text-primary);
+            font-size: 18px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .summary-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+        }
+
+        .summary-item.total {
+            background: rgba(47, 155, 127, 0.1);
+            font-weight: 600;
+        }
+
+        .summary-item span:first-child {
+            color: var(--text-secondary);
+        }
+
+        .summary-item span:last-child {
+            color: var(--text-primary);
+            font-weight: 500;
+        }
     </style>
 </head>
 
@@ -307,11 +369,29 @@ $installments = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
                 <h4 class="section-title"><i class="fas fa-calendar-check"></i> Installments</h4>
                 <div class="row">
-                    <?php foreach ($installments as $installment): ?>
+                    <?php
+                    $startDate = new DateTime($scheme['StartDate']);
+                    $currentDate = new DateTime();
+                    $totalInstallments = $scheme['TotalPayments'];
+                    $monthlyPayment = $scheme['MonthlyPayment'];
+                    $installmentsPaid = 0;
+
+                    // Calculate how many installments have passed since start date
+                    if ($currentDate > $startDate) {
+                        $interval = $currentDate->diff($startDate);
+                        $monthsPassed = ($interval->y * 12) + $interval->m;
+                        $installmentsPaid = min($monthsPassed, $totalInstallments);
+                    }
+
+                    foreach ($installments as $installment):
+                        $installmentDate = new DateTime($installment['DrawDate']);
+                        $isPastDue = $installmentDate < $currentDate;
+                        $isCurrentMonth = $installmentDate->format('Y-m') === $currentDate->format('Y-m');
+                    ?>
                         <div class="col-md-6 mb-4">
-                            <div class="installment-card">
+                            <div class="installment-card <?php echo $isPastDue ? 'past-due' : ''; ?> <?php echo $isCurrentMonth ? 'current-month' : ''; ?>">
                                 <?php if ($installment['ImageURL']): ?>
-                                    <img src="<?php echo htmlspecialchars($installment['ImageURL']); ?>"
+                                    <img src="../../<?php echo htmlspecialchars($installment['ImageURL']); ?>"
                                         alt="Installment <?php echo $installment['InstallmentNumber']; ?>"
                                         class="installment-image">
                                 <?php endif; ?>
@@ -319,6 +399,11 @@ $installments = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                 <div class="installment-number">
                                     <i class="fas fa-flag"></i>
                                     Installment <?php echo $installment['InstallmentNumber']; ?>
+                                    <?php if ($isPastDue): ?>
+                                        <span class="badge bg-danger ms-2">Past Due</span>
+                                    <?php elseif ($isCurrentMonth): ?>
+                                        <span class="badge bg-success ms-2">Current</span>
+                                    <?php endif; ?>
                                 </div>
 
                                 <div class="draw-date">
@@ -328,6 +413,15 @@ $installments = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
                                 <div class="amount">
                                     Amount: <span>₹<?php echo number_format($installment['Amount'], 2); ?></span>
+                                </div>
+
+                                <div class="payment-status">
+                                    <i class="fas fa-info-circle"></i>
+                                    <?php if ($installment['InstallmentNumber'] <= $installmentsPaid): ?>
+                                        <span class="text-success">Payment Due</span>
+                                    <?php else: ?>
+                                        <span class="text-warning">Upcoming Payment</span>
+                                    <?php endif; ?>
                                 </div>
 
                                 <?php if ($installment['Benefits']): ?>
@@ -350,6 +444,32 @@ $installments = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             </div>
                         </div>
                     <?php endforeach; ?>
+                </div>
+
+                <div class="payment-summary-card">
+                    <h4><i class="fas fa-calculator"></i> Payment Summary</h4>
+                    <div class="summary-details">
+                        <div class="summary-item">
+                            <span>Total Installments:</span>
+                            <span><?php echo $totalInstallments; ?></span>
+                        </div>
+                        <div class="summary-item">
+                            <span>Installments Paid:</span>
+                            <span><?php echo $installmentsPaid; ?></span>
+                        </div>
+                        <div class="summary-item">
+                            <span>Remaining Installments:</span>
+                            <span><?php echo $totalInstallments - $installmentsPaid; ?></span>
+                        </div>
+                        <div class="summary-item">
+                            <span>Monthly Payment:</span>
+                            <span>₹<?php echo number_format($monthlyPayment, 2); ?></span>
+                        </div>
+                        <div class="summary-item total">
+                            <span>Total Amount:</span>
+                            <span>₹<?php echo number_format($monthlyPayment * $totalInstallments, 2); ?></span>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="text-center mt-4 mb-4">

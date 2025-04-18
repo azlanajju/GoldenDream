@@ -102,14 +102,13 @@ $conditions = [];
 $params = [];
 
 if (!empty($search)) {
-    $conditions[] = "(SchemeName LIKE ? OR Description LIKE ?)";
-    $params[] = "%$search%";
-    $params[] = "%$search%";
+    $conditions[] = "(SchemeName LIKE :search OR Description LIKE :search)";
+    $params[':search'] = "%$search%";
 }
 
 if (!empty($status)) {
-    $conditions[] = "Status = ?";
-    $params[] = $status;
+    $conditions[] = "Status = :status";
+    $params[':status'] = $status;
 }
 
 $whereClause = !empty($conditions) ? " WHERE " . implode(" AND ", $conditions) : "";
@@ -125,17 +124,17 @@ $totalPages = ceil($totalRecords / $recordsPerPage);
 $query = "SELECT s.*, 
           (SELECT COUNT(*) FROM Subscriptions WHERE SchemeID = s.SchemeID AND RenewalStatus = 'Active') as active_subscriptions,
           (SELECT COUNT(*) FROM Installments WHERE SchemeID = s.SchemeID) as total_installments
-          FROM Schemes s" . $whereClause .
-    " ORDER BY s.CreatedAt DESC LIMIT :offset, :limit";
+          FROM Schemes s" . $whereClause . " ORDER BY s.CreatedAt DESC LIMIT :offset, :limit";
 
 $stmt = $conn->prepare($query);
 
+// Bind all parameters
 foreach ($params as $key => $value) {
-    $stmt->bindValue($key + 1, $value);
+    $stmt->bindValue($key, $value);
 }
 
-$stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
-$stmt->bindParam(':limit', $recordsPerPage, PDO::PARAM_INT);
+$stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+$stmt->bindValue(':limit', $recordsPerPage, PDO::PARAM_INT);
 $stmt->execute();
 
 $schemes = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -350,9 +349,13 @@ include("../components/topbar.php");
     <div class="content-wrapper">
         <div class="page-header">
             <h1 class="page-title">Scheme Management</h1>
+            <br>
+
             <a href="add.php" class="add-scheme-btn">
                 <i class="fas fa-plus"></i> Add New Scheme
             </a>
+ <br>
+            <br>
         </div>
 
         <?php if (isset($_SESSION['success_message'])): ?>

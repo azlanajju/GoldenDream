@@ -40,12 +40,12 @@ $profileImage = $customer['ProfileImageURL'] ? $customer['ProfileImageURL'] : 'a
                 <span class="user-name"> <?php echo htmlspecialchars($userData['customer_name']); ?></span>
             </div>
             <ul class="dropdown-menu">
-                <li><a class="dropdown-item" href="profile.php"><i class="fas fa-user"></i> Profile</a></li>
-                <li><a class="dropdown-item" href="settings.php"><i class="fas fa-cog"></i> Settings</a></li>
+                <li><a class="dropdown-item" href="<?php echo $c_path; ?>profile"><i class="fas fa-user"></i> Profile</a></li>
+                <!-- <li><a class="dropdown-item" href="<?php echo $c_path; ?>settings"><i class="fas fa-cog"></i> Settings</a></li> -->
                 <li>
                     <hr class="dropdown-divider">
                 </li>
-                <li><a class="dropdown-item" href="logout.php"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                <li><a class="dropdown-item" href="<?php echo $c_path; ?>logout"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
             </ul>
         </div>
     </div>

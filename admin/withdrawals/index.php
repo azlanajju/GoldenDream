@@ -109,34 +109,33 @@ if (!empty($search)) {
         CASE 
             WHEN w.UserType = 'Customer' THEN c.Name 
             WHEN w.UserType = 'Promoter' THEN p.Name 
-        END LIKE ? OR
+        END LIKE :search OR
         CASE 
             WHEN w.UserType = 'Customer' THEN c.CustomerUniqueID
             WHEN w.UserType = 'Promoter' THEN p.PromoterUniqueID
-        END LIKE ?
+        END LIKE :search
     )";
-    $params[] = "%$search%";
-    $params[] = "%$search%";
+    $params[':search'] = "%$search%";
 }
 
 if (!empty($status)) {
-    $conditions[] = "w.Status = ?";
-    $params[] = $status;
+    $conditions[] = "w.Status = :status";
+    $params[':status'] = $status;
 }
 
 if (!empty($userType)) {
-    $conditions[] = "w.UserType = ?";
-    $params[] = $userType;
+    $conditions[] = "w.UserType = :userType";
+    $params[':userType'] = $userType;
 }
 
 if (!empty($startDate)) {
-    $conditions[] = "DATE(w.RequestedAt) >= ?";
-    $params[] = $startDate;
+    $conditions[] = "DATE(w.RequestedAt) >= :startDate";
+    $params[':startDate'] = $startDate;
 }
 
 if (!empty($endDate)) {
-    $conditions[] = "DATE(w.RequestedAt) <= ?";
-    $params[] = $endDate;
+    $conditions[] = "DATE(w.RequestedAt) <= :endDate";
+    $params[':endDate'] = $endDate;
 }
 
 $whereClause = !empty($conditions) ? " WHERE " . implode(" AND ", $conditions) : "";
@@ -194,8 +193,9 @@ $query = "
 
 $stmt = $conn->prepare($query);
 
+// Bind all parameters
 foreach ($params as $key => $value) {
-    $stmt->bindValue($key + 1, $value);
+    $stmt->bindValue($key, $value);
 }
 
 $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
@@ -626,14 +626,30 @@ include("../components/topbar.php");
                         <i class="fas fa-money-bill-wave"></i>
                         <p>No withdrawal requests found</p>
                         <?php if (!empty($search) || !empty($status) || !empty($userType) || !empty($startDate) || !empty($endDate)): ?>
-                            <a href="index.php" class="btn btn-secondary">Clear Filters</a>
+                            <a href="index.php" class="btn btn-clear-filter">Clear Filters</a>
                         <?php endif; ?>
                     </div>
                 <?php endif; ?>
             </div>
         </div>
     </div>
-
+    <style>
+        .btn-clear-filter {
+            background: linear-gradient(135deg, white, black);
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all var(--pr_transition);
+            text-decoration: none;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+    </style>
     <script>
         // Handle search and filters
         function applyFilters() {

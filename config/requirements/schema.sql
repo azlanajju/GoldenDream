@@ -1,4 +1,3 @@
-
 -- 1. Admins Table (Parent Table)
 CREATE TABLE Admins (
     AdminID INT AUTO_INCREMENT PRIMARY KEY,
@@ -17,6 +16,7 @@ CREATE TABLE Schemes (
     Description TEXT,
     MonthlyPayment DECIMAL(10,2) NOT NULL,
     TotalPayments INT NOT NULL DEFAULT 1,
+    StartDate DATE,
     Status ENUM('Active', 'Inactive') DEFAULT 'Active',
     CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -54,6 +54,7 @@ CREATE TABLE Promoters (
     Gender ENUM('Male', 'Female', 'Other') DEFAULT NULL,
     DateOfBirth DATE DEFAULT NULL,
     ParentPromoterID  INT DEFAULT NULL,
+    TeamID VARCHAR(20),
     Status ENUM('Active', 'Inactive') DEFAULT 'Active',
     CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UpdatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -70,12 +71,16 @@ CREATE TABLE Customers (
     PasswordHash VARCHAR(255) NOT NULL,
     Address TEXT,
     ProfileImageURL VARCHAR(255),
+    Gender ENUM('Male', 'Female', 'Other') DEFAULT NULL,
+    DateOfBirth DATE DEFAULT NULL,
+
     BankAccountName VARCHAR(255),
     BankAccountNumber VARCHAR(50),
     IFSCCode VARCHAR(20),
     BankName VARCHAR(255),
     PromoterID INT,
     ReferredBy  VARCHAR(50), 
+    TeamID VARCHAR(20),
     Status ENUM('Active', 'Inactive', 'Suspended') DEFAULT 'Active',
     Gender ENUM('Male', 'Female', 'Other') DEFAULT NULL,
     DateOfBirth DATE DEFAULT NULL,
@@ -197,12 +202,16 @@ CREATE TABLE Winners (
     WinnerID INT AUTO_INCREMENT PRIMARY KEY,
     UserID INT NOT NULL,
     UserType ENUM('Customer', 'Promoter') NOT NULL,
-    PrizeType ENUM('Surprise Prize', 'Bumper Prize', 'Gift Hamper', 'Education Scholarship', 'Other') NOT NULL,
+    PrizeType ENUM('Surprise Prize', 'Bumper Prize', 'Gift Hamper', 'Education Scholarship', 'Other', ) NOT NULL,
     WinningDate TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     Status ENUM('Pending', 'Claimed', 'Expired') DEFAULT 'Pending',
     AdminID INT DEFAULT NULL,
+    SchemeID INT DEFAULT NULL,
+    InstallmentID INT DEFAULT NULL,
+    DeliveryAddress TEXT,
+    PreferredDeliveryDate DATE,
     Remarks TEXT,
-    FOREIGN KEY (UserID) REFERENCES Customers(CustomerID) ON DELETE CASCADE,
+    VerifiedAt DATE,
     FOREIGN KEY (AdminID) REFERENCES Admins(AdminID) ON DELETE SET NULL
 );
 

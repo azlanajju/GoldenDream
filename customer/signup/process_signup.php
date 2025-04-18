@@ -91,7 +91,7 @@ try {
     ]);
 
     // Redirect to dashboard
-    header('Location: dashboard.php');
+    header('Location: ../dashboard');
     exit;
 } catch (Exception $e) {
     http_response_code(400);

@@ -92,27 +92,24 @@ $conditions = [];
 $params = [];
 
 if (!empty($search)) {
-    $conditions[] = "(Name LIKE ? OR Email LIKE ? OR Contact LIKE ? OR PromoterUniqueID LIKE ?)";
-    $params[] = "%$search%";
-    $params[] = "%$search%";
-    $params[] = "%$search%";
-    $params[] = "%$search%";
+    $conditions[] = "(p.Name LIKE :search OR p.Email LIKE :search OR p.Contact LIKE :search OR p.PromoterUniqueID LIKE :search)";
+    $params[':search'] = "%$search%";
 }
 
 if (!empty($status)) {
-    $conditions[] = "Status = ?";
-    $params[] = $status;
+    $conditions[] = "p.Status = :status";
+    $params[':status'] = $status;
 }
 
 if (!empty($parentId)) {
-    $conditions[] = "ParentPromoterID = ?";
-    $params[] = $parentId;
+    $conditions[] = "p.ParentPromoterID = :parent_id";
+    $params[':parent_id'] = $parentId;
 }
 
 $whereClause = !empty($conditions) ? " WHERE " . implode(" AND ", $conditions) : "";
 
 // Get total number of promoters (for pagination)
-$countQuery = "SELECT COUNT(*) as total FROM Promoters" . $whereClause;
+$countQuery = "SELECT COUNT(*) as total FROM Promoters p" . $whereClause;
 $stmt = $conn->prepare($countQuery);
 $stmt->execute($params);
 $totalRecords = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
@@ -128,13 +125,13 @@ $query = "SELECT p.PromoterID, p.PromoterUniqueID, p.Name, p.Contact, p.Email,
 
 $stmt = $conn->prepare($query);
 
-// Bind search and filter parameters
+// Bind all parameters
 foreach ($params as $key => $value) {
-    $stmt->bindValue($key + 1, $value);
+    $stmt->bindValue($key, $value);
 }
 
-$stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
-$stmt->bindParam(':limit', $recordsPerPage, PDO::PARAM_INT);
+$stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+$stmt->bindValue(':limit', $recordsPerPage, PDO::PARAM_INT);
 $stmt->execute();
 
 $promoters = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -883,85 +880,85 @@ include("../components/topbar.php");
 
                 <?php if (count($promoters) > 0): ?>
                     <div class="responsive-table">
-    <table class="promoter-table">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Name</th>
-                <th>Contact</th>
-                <th>Email</th>
-                <th>Status</th>
-                <th>Codes</th>
-                <th>Customers</th>
-                <th>Created</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php foreach ($promoters as $promoter): ?>
-                <tr>
-                    <td><?php echo $promoter['PromoterUniqueID']; ?></td>
-                    <td>
-                        <?php echo htmlspecialchars($promoter['Name']); ?>
-                        <?php if (!empty($promoter['ParentName'])): ?>
-                            <span class="parent-promoter">
-                                <i class="fas fa-user-friends"></i> Under: <?php echo htmlspecialchars($promoter['ParentName']); ?>
-                            </span>
-                        <?php endif; ?>
-                    </td>
-                    <td><?php echo htmlspecialchars($promoter['Contact']); ?></td>
-                    <td><?php echo htmlspecialchars($promoter['Email'] ?? 'N/A'); ?></td>
-                    <td>
-                        <span class="status-badge status-<?php echo strtolower($promoter['Status']); ?>">
-                            <?php echo $promoter['Status']; ?>
-                        </span>
-                    </td>
-                    <td><span class="payment-code-counter"><?php echo $promoter['PaymentCodeCounter']; ?></span></td>
-                    <td>
-                        <span class="customer-count">
-                            <?php echo isset($promoterCustomerCounts[$promoter['PromoterID']]) ? $promoterCustomerCounts[$promoter['PromoterID']] : 0; ?>
-                        </span>
-                    </td>
-                    <td><?php echo date('M d, Y', strtotime($promoter['CreatedAt'])); ?></td>
-                    <td>
-                        <div class="promoter-actions">
-                            <a href="view.php?id=<?php echo $promoter['PromoterID']; ?>" class="view-btn" title="View Details">
-                                <i class="fas fa-eye"></i>
-                            </a>
+                        <table class="promoter-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Name</th>
+                                    <th>Contact</th>
+                                    <th>Email</th>
+                                    <th>Status</th>
+                                    <th>Codes</th>
+                                    <th>Customers</th>
+                                    <th>Created</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($promoters as $promoter): ?>
+                                    <tr>
+                                        <td><?php echo $promoter['PromoterUniqueID']; ?></td>
+                                        <td>
+                                            <?php echo htmlspecialchars($promoter['Name']); ?>
+                                            <?php if (!empty($promoter['ParentName'])): ?>
+                                                <span class="parent-promoter">
+                                                    <i class="fas fa-user-friends"></i> Under: <?php echo htmlspecialchars($promoter['ParentName']); ?>
+                                                </span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td><?php echo htmlspecialchars($promoter['Contact']); ?></td>
+                                        <td><?php echo htmlspecialchars($promoter['Email'] ?? 'N/A'); ?></td>
+                                        <td>
+                                            <span class="status-badge status-<?php echo strtolower($promoter['Status']); ?>">
+                                                <?php echo $promoter['Status']; ?>
+                                            </span>
+                                        </td>
+                                        <td><span class="payment-code-counter"><?php echo $promoter['PaymentCodeCounter']; ?></span></td>
+                                        <td>
+                                            <span class="customer-count">
+                                                <?php echo isset($promoterCustomerCounts[$promoter['PromoterID']]) ? $promoterCustomerCounts[$promoter['PromoterID']] : 0; ?>
+                                            </span>
+                                        </td>
+                                        <td><?php echo date('M d, Y', strtotime($promoter['CreatedAt'])); ?></td>
+                                        <td>
+                                            <div class="promoter-actions">
+                                                <a href="view.php?id=<?php echo $promoter['PromoterID']; ?>" class="view-btn" title="View Details">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
 
-                            <a href="edit.php?id=<?php echo $promoter['PromoterID']; ?>" class="edit-btn" title="Edit">
-                                <i class="fas fa-edit"></i>
-                            </a>
+                                                <a href="edit.php?id=<?php echo $promoter['PromoterID']; ?>" class="edit-btn" title="Edit">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
 
-                            <?php if ($promoter['Status'] == 'Active'): ?>
-                                <a href="index.php?status=deactivate&id=<?php echo $promoter['PromoterID']; ?>"
-                                   class="deactivate-btn"
-                                   title="Deactivate"
-                                   onclick="return confirm('Are you sure you want to deactivate this promoter?');">
-                                    <i class="fas fa-ban"></i>
-                                </a>
-                            <?php else: ?>
-                                <a href="index.php?status=activate&id=<?php echo $promoter['PromoterID']; ?>"
-                                   class="activate-btn"
-                                   title="Activate"
-                                   onclick="return confirm('Are you sure you want to activate this promoter?');">
-                                    <i class="fas fa-check"></i>
-                                </a>
-                            <?php endif; ?>
+                                                <?php if ($promoter['Status'] == 'Active'): ?>
+                                                    <a href="index.php?status=deactivate&id=<?php echo $promoter['PromoterID']; ?>"
+                                                        class="deactivate-btn"
+                                                        title="Deactivate"
+                                                        onclick="return confirm('Are you sure you want to deactivate this promoter?');">
+                                                        <i class="fas fa-ban"></i>
+                                                    </a>
+                                                <?php else: ?>
+                                                    <a href="index.php?status=activate&id=<?php echo $promoter['PromoterID']; ?>"
+                                                        class="activate-btn"
+                                                        title="Activate"
+                                                        onclick="return confirm('Are you sure you want to activate this promoter?');">
+                                                        <i class="fas fa-check"></i>
+                                                    </a>
+                                                <?php endif; ?>
 
-                            <a href="index.php?delete=<?php echo $promoter['PromoterID']; ?>"
-                               class="delete-btn"
-                               title="Delete"
-                               onclick="return confirm('Are you sure you want to delete this promoter? This action cannot be undone and will also remove all associated customers.');">
-                                <i class="fas fa-trash-alt"></i>
-                            </a>
-                        </div>
-                    </td>
-                </tr>
-            <?php endforeach; ?>
-        </tbody>
-    </table>
-</div>
+                                                <a href="index.php?delete=<?php echo $promoter['PromoterID']; ?>"
+                                                    class="delete-btn"
+                                                    title="Delete"
+                                                    onclick="return confirm('Are you sure you want to delete this promoter? This action cannot be undone and will also remove all associated customers.');">
+                                                    <i class="fas fa-trash-alt"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
 
                     <!-- Pagination -->
                     <?php if ($totalPages > 1): ?>
