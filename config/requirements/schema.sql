@@ -51,6 +51,8 @@ CREATE TABLE Promoters (
     IFSCCode VARCHAR(20),
     BankName VARCHAR(255),
     PaymentCodeCounter INT DEFAULT 0,
+    Gender ENUM('Male', 'Female', 'Other') DEFAULT NULL,
+    DateOfBirth DATE DEFAULT NULL,
     ParentPromoterID  INT DEFAULT NULL,
     Status ENUM('Active', 'Inactive') DEFAULT 'Active',
     CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

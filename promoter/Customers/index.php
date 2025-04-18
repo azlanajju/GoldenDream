@@ -560,7 +560,7 @@ if (!empty($searchQuery) || !empty($filterStatus)) {
                         <p>Manage and view all customers under your account</p>
                     </div>
                 </div>
-                <a href="add-customer.php" class="btn-primary">
+                <a href="add.php" class="btn-primary">
                     <i class="fas fa-plus"></i>
                     Add New Customer
                 </a>
