@@ -345,13 +345,13 @@
                 <span class="link-text">My Profile</span>
             </a>
         </li>
-        
+<!--         
         <li class="<?php echo ($currentPage == 'settings') ? 'active' : ''; ?>">
             <a href="<?php echo $menuPath; ?>settings" data-title="Settings">
                 <i class="fas fa-cog"></i>
                 <span class="link-text">Settings</span>
             </a>
-        </li>
+        </li> -->
         <li>
             <a href="<?php echo $menuPath; ?>logout.php" data-title="Logout">
                 <i class="fas fa-sign-out-alt"></i>
