@@ -1,9 +1,9 @@
 -- 1. Admins Table (Parent Table)
 CREATE TABLE Admins (
     AdminID INT AUTO_INCREMENT PRIMARY KEY,
-    Name VARCHAR(255) NOT NULL,
-    Email VARCHAR(255) UNIQUE NOT NULL,
-    PasswordHash VARCHAR(255) NOT NULL,
+    Name VARCHAR(255) ,
+    Email VARCHAR(255)  ,
+    PasswordHash VARCHAR(255) ,
     Role ENUM('SuperAdmin', 'Verifier') DEFAULT 'Verifier',
     Status ENUM('Active', 'Inactive') DEFAULT 'Active',
     CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -12,21 +12,21 @@ CREATE TABLE Admins (
 -- 2. Schemes Table (Stores types of schemes)
 CREATE TABLE Schemes (
     SchemeID INT AUTO_INCREMENT PRIMARY KEY,
-    SchemeName VARCHAR(255) UNIQUE NOT NULL,
+    SchemeName VARCHAR(255)  ,
     Description TEXT,
-    MonthlyPayment DECIMAL(10,2) NOT NULL,
-    TotalPayments INT NOT NULL DEFAULT 1,
+    MonthlyPayment DECIMAL(10,2) ,
+    TotalPayments INT  DEFAULT 1,
     StartDate DATE,
     Status ENUM('Active', 'Inactive') DEFAULT 'Active',
     CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 CREATE TABLE Installments (
     InstallmentID INT AUTO_INCREMENT PRIMARY KEY,
-    SchemeID INT NOT NULL,
+    SchemeID INT ,
     InstallmentName VARCHAR(100), 
-    InstallmentNumber INT NOT NULL,
-    Amount DECIMAL(10,2) NOT NULL,
-    DrawDate DATE NOT NULL,
+    InstallmentNumber INT ,
+    Amount DECIMAL(10,2) ,
+    DrawDate DATE ,
     Benefits TEXT,
     ImageURL VARCHAR(255), 
     Status ENUM('Active', 'Inactive') DEFAULT 'Active',
@@ -39,10 +39,10 @@ CREATE TABLE Installments (
 CREATE TABLE Promoters (
     PromoterID INT AUTO_INCREMENT PRIMARY KEY,
     PromoterUniqueID VARCHAR(50) UNIQUE ,
-    CustomerID INT UNIQUE,
+    CustomerID INT ,
     Name VARCHAR(255) ,
-    Contact VARCHAR(50) UNIQUE ,
-    Email VARCHAR(255) UNIQUE,
+    Contact VARCHAR(50)  ,
+    Email VARCHAR(255) ,
     PasswordHash VARCHAR(255) DEFAULT "$2y$10$f8RpDnV887jmqZKOTEm/oesy7nKRboD8HxH5yQMF0xdLO0aTGLnZm",
     Address TEXT,
     ProfileImageURL VARCHAR(255),
@@ -51,7 +51,7 @@ CREATE TABLE Promoters (
     IFSCCode VARCHAR(20),
     BankName VARCHAR(255),
     PaymentCodeCounter INT DEFAULT 0,
-    ParentPromoterID  INT DEFAULT NULL,
+    ParentPromoterID  VARCHAR(50) DEFAULT NULL,
     TeamName VARCHAR(200),
     Status ENUM('Active', 'Inactive') DEFAULT 'Active',
     Commission  VARCHAR(200),
@@ -63,29 +63,27 @@ CREATE TABLE Promoters (
 -- 4. Customers Table (Child of Promoters)
 CREATE TABLE Customers (
     CustomerID INT AUTO_INCREMENT PRIMARY KEY,
-    CustomerUniqueID VARCHAR(50) UNIQUE NOT NULL,
-    Name VARCHAR(255) NOT NULL,
-    Contact VARCHAR(50) UNIQUE NOT NULL,
-    Email VARCHAR(255) UNIQUE,
-    PasswordHash VARCHAR(255) NOT NULL,
+    CustomerUniqueID  VARCHAR(50)  ,
+    Name VARCHAR(255) ,
+    Contact VARCHAR(50)  ,
+    Email VARCHAR(255) ,
+    PasswordHash VARCHAR(255) DEFAULT "$2y$10$f8RpDnV887jmqZKOTEm/oesy7nKRboD8HxH5yQMF0xdLO0aTGLnZm" ,
     Address TEXT,
     ProfileImageURL VARCHAR(255),
     Gender ENUM('Male', 'Female', 'Other') DEFAULT NULL,
     DateOfBirth DATE DEFAULT NULL,
+
     BankAccountName VARCHAR(255),
     BankAccountNumber VARCHAR(50),
     IFSCCode VARCHAR(20),
     BankName VARCHAR(255),
-    PromoterID INT,
+    PromoterID VARCHAR(50),
     ReferredBy  VARCHAR(50), 
-    TeamID VARCHAR(20),
+    TeamName VARCHAR(200),
+    JoinedDate VARCHAR(50),
     Status ENUM('Active', 'Inactive', 'Suspended') DEFAULT 'Active',
-    Gender ENUM('Male', 'Female', 'Other') DEFAULT NULL,
-    DateOfBirth DATE DEFAULT NULL,
     CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UpdatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (PromoterID) REFERENCES Promoters(PromoterID) ON DELETE SET NULL
-);
+    UpdatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP);
 
 -- 5. Payments Table (Child of Customers and Promoters)
 CREATE TABLE Payments (
@@ -96,9 +94,9 @@ CREATE TABLE Payments (
     SchemeID INT,
     InstallmentID INT,
 
-    Amount DECIMAL(10,2) NOT NULL,
+    Amount DECIMAL(10,2) ,
     PaymentCodeValue INT DEFAULT 0,
-    ScreenshotURL VARCHAR(255) NOT NULL,
+    ScreenshotURL VARCHAR(255) ,
     Status ENUM('Pending', 'Verified', 'Rejected') DEFAULT 'Pending',
     SubmittedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     VerifiedAt TIMESTAMP NULL,
@@ -116,7 +114,7 @@ CREATE TABLE PaymentCodeTransactions (
     TransactionID INT AUTO_INCREMENT PRIMARY KEY,
     PromoterID INT,
     AdminID INT DEFAULT NULL,
-    PaymentCodeChange INT NOT NULL,
+    PaymentCodeChange INT ,
     TransactionType ENUM('Addition', 'Correction', 'Deduction') DEFAULT 'Addition',
     Remarks TEXT,
     CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -128,7 +126,7 @@ CREATE TABLE PaymentCodeTransactions (
 CREATE TABLE PaymentCodesPerMonth (
     RecordID INT AUTO_INCREMENT PRIMARY KEY,
     PromoterID INT,
-    MonthYear DATE NOT NULL,
+    MonthYear DATE ,
     PaymentCodes INT DEFAULT 0,
     CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (PromoterID) REFERENCES Promoters(PromoterID) ON DELETE CASCADE
@@ -137,9 +135,9 @@ CREATE TABLE PaymentCodesPerMonth (
 -- 8. Notifications Table (Linked to all users)
 CREATE TABLE Notifications (
     NotificationID INT AUTO_INCREMENT PRIMARY KEY,
-    UserID INT NOT NULL,
-    UserType ENUM('Customer', 'Promoter', 'Admin') NOT NULL,
-    Message TEXT NOT NULL,
+    UserID INT ,
+    UserType ENUM('Customer', 'Promoter', 'Admin') ,
+    Message TEXT ,
     IsRead BOOLEAN DEFAULT FALSE,
     CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -147,9 +145,9 @@ CREATE TABLE Notifications (
 -- 9. Activity Logs Table (Logs actions from Admins and Promoters)
 CREATE TABLE ActivityLogs (
     LogID INT AUTO_INCREMENT PRIMARY KEY,
-    UserID INT NOT NULL,
-    UserType ENUM('Admin', 'Promoter') NOT NULL,
-    Action TEXT NOT NULL,
+    UserID INT ,
+    UserType ENUM('Admin', 'Promoter') ,
+    Action TEXT ,
     IPAddress VARCHAR(50),
     CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -157,10 +155,10 @@ CREATE TABLE ActivityLogs (
 -- 11. Subscriptions Table (Tracks customer subscriptions)
 CREATE TABLE Subscriptions (
     SubscriptionID INT AUTO_INCREMENT PRIMARY KEY,
-    CustomerID INT NOT NULL,
-    SchemeID INT NOT NULL,
-    StartDate DATE NOT NULL,
-    EndDate DATE NOT NULL,
+    CustomerID INT ,
+    SchemeID INT ,
+    StartDate DATE ,
+    EndDate DATE ,
     RenewalStatus ENUM('Active', 'Expired', 'Cancelled') DEFAULT 'Active',
     CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UpdatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -172,23 +170,40 @@ CREATE TABLE Subscriptions (
 CREATE TABLE PaymentQR (
     QRID INT AUTO_INCREMENT PRIMARY KEY,
     CustomerID INT,
-    UPIQRImageURL VARCHAR(255) NOT NULL,
-    BankAccountName VARCHAR(255) NOT NULL,
-    BankAccountNumber VARCHAR(50) NOT NULL,
-    IFSCCode VARCHAR(20) NOT NULL,
-    BankName VARCHAR(255) NOT NULL,
-    BankBranch VARCHAR(255) NOT NULL,
-    BankAddress TEXT NOT NULL,
+    UPIQRImageURL VARCHAR(255) ,
+    BankAccountName VARCHAR(255) ,
+    BankAccountNumber VARCHAR(50) ,
+    IFSCCode VARCHAR(20) ,
+    BankName VARCHAR(255) ,
+    BankBranch VARCHAR(255) ,
+    BankAddress TEXT ,
+    RazorpayKeyID VARCHAR(100),
+    RazorpayKeySecret VARCHAR(100),
+    RazorpayContactID VARCHAR(100),
+    RazorpayFundAccountID VARCHAR(100),
+    RazorpayQRID VARCHAR(100),
+    RazorpayQRStatus VARCHAR(50),
     CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (CustomerID) REFERENCES Customers(CustomerID) ON DELETE CASCADE
 );
 
+CREATE TABLE WhatsAppAPIConfig (
+    ConfigID INT AUTO_INCREMENT PRIMARY KEY,
+    APIProviderName VARCHAR(100) ,
+    APIEndpoint VARCHAR(255) ,
+    AccessToken TEXT ,
+    Token VARCHAR(255) ,
+    InstanceID VARCHAR(100) ,
+    Status VARCHAR(20) DEFAULT 'Active',
+    CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UpdatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
 
 CREATE TABLE Withdrawals (
     WithdrawalID INT AUTO_INCREMENT PRIMARY KEY,
-    UserID INT NOT NULL,
-    UserType ENUM('Customer', 'Promoter') NOT NULL,
-    Amount DECIMAL(10,2) NOT NULL,
+    UserID INT ,
+    UserType ENUM('Customer', 'Promoter') ,
+    Amount DECIMAL(10,2) ,
     Status ENUM('Pending', 'Approved', 'Rejected') DEFAULT 'Pending',
     RequestedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     ProcessedAt TIMESTAMP NULL,
@@ -198,10 +213,10 @@ CREATE TABLE Withdrawals (
 
 CREATE TABLE Winners (
     WinnerID INT AUTO_INCREMENT PRIMARY KEY,
-    UserID INT NOT NULL,
-    UserType ENUM('Customer', 'Promoter') NOT NULL,
-    PrizeType ENUM('Surprise Prize', 'Bumper Prize', 'Gift Hamper', 'Education Scholarship', 'Other', ) NOT NULL,
-    WinningDate TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UserID INT ,
+    UserType ENUM('Customer', 'Promoter') ,
+    PrizeType ENUM('Surprise Prize', 'Bumper Prize', 'Gift Hamper', 'Education Scholarship', 'Other') ,
+    WinningDate TIMESTAMP,
     Status ENUM('Pending', 'Claimed', 'Expired') DEFAULT 'Pending',
     AdminID INT DEFAULT NULL,
     SchemeID INT DEFAULT NULL,
@@ -213,24 +228,25 @@ CREATE TABLE Winners (
     FOREIGN KEY (AdminID) REFERENCES Admins(AdminID) ON DELETE SET NULL
 );
 
+
 CREATE TABLE Teams (
     TeamID INT AUTO_INCREMENT PRIMARY KEY,
-    TeamUniqueID VARCHAR(50) UNIQUE NOT NULL,
-    TeamName VARCHAR(255) UNIQUE NOT NULL,
+    TeamUniqueID VARCHAR(50)  ,
+    TeamName VARCHAR(255)  ,
     CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- 12. KYC Table (Stores KYC details for Customers and Promoters)
 CREATE TABLE KYC (
     KYCID INT AUTO_INCREMENT PRIMARY KEY,
-    UserID INT NOT NULL,
-    UserType ENUM('Customer', 'Promoter') NOT NULL,
-    AadharNumber VARCHAR(20) UNIQUE NOT NULL,
-    PANNumber VARCHAR(10) UNIQUE,
-    IDProofType ENUM('Aadhar', 'PAN', 'Voter ID', 'Passport', 'Driving License') NOT NULL,
-    IDProofImageURL VARCHAR(255) NOT NULL,
-    AddressProofType ENUM('Aadhar', 'Voter ID', 'Utility Bill', 'Bank Statement', 'Ration Card') NOT NULL,
-    AddressProofImageURL VARCHAR(255) NOT NULL,
+    UserID INT ,
+    UserType ENUM('Customer', 'Promoter') ,
+    AadharNumber VARCHAR(20)  ,
+    PANNumber VARCHAR(10) ,
+    IDProofType ENUM('Aadhar', 'PAN', 'Voter ID', 'Passport', 'Driving License') ,
+    IDProofImageURL VARCHAR(255) ,
+    AddressProofType ENUM('Aadhar', 'Voter ID', 'Utility Bill', 'Bank Statement', 'Ration Card') ,
+    AddressProofImageURL VARCHAR(255) ,
     Status ENUM('Pending', 'Verified', 'Rejected') DEFAULT 'Pending',
     SubmittedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     VerifiedAt TIMESTAMP NULL,
@@ -243,10 +259,10 @@ CREATE TABLE KYC (
 
 CREATE TABLE Balances (
     BalanceID INT AUTO_INCREMENT PRIMARY KEY,
-    UserID INT NOT NULL,
-    UserType ENUM('Customer', 'Promoter') NOT NULL,
-    SchemeID INT NOT NULL,
-    BalanceAmount DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+    UserID INT ,
+    UserType ENUM('Customer', 'Promoter') ,
+    SchemeID INT ,
+    BalanceAmount DECIMAL(10,2)  DEFAULT 0.00,
     LastUpdated TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (UserID) REFERENCES Customers(CustomerID) ON DELETE CASCADE,
     FOREIGN KEY (SchemeID) REFERENCES Schemes(SchemeID) ON DELETE CASCADE

@@ -93,6 +93,21 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 if (password_verify($password, $admin['PasswordHash'])) {
                     // Check if account is active
                     if ($admin['Status'] === 'Active') {
+                        // Generate JWT token
+                        require_once(".../../../config/JWT.php");
+                        $jwtToken = JWTManager::generateToken($admin['AdminID'], $admin['Email'], $admin['Role']);
+
+                        // Set JWT token in cookie
+                        setcookie(
+                            'admin_token',
+                            $jwtToken,
+                            time() + 3600, // 1 hour
+                            '/',
+                            '',
+                            true, // secure
+                            true  // httponly
+                        );
+
                         // Set up the user session
                         $_SESSION['admin_id'] = $admin['AdminID'];
                         $_SESSION['admin_name'] = $admin['Name'];

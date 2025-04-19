@@ -1,10 +1,10 @@
 <?php
 class Database
 {
-    private $host = "localhost";
-    private $db_name = "goldendream";
-    private $username = "root";
-    private $password = "";
+    private $host = "srv1752.hstgr.io";
+    private $db_name = "u229215627_GoldenDream";
+    private $username = "u229215627_GoldenDream";
+    private $password = "Azl@n2002";
     public $conn;
 
     public function getConnection()

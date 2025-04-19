@@ -14,6 +14,12 @@ require_once("../../config/config.php");
 $database = new Database();
 $conn = $database->getConnection();
 
+// Add this after the database connection
+require '../../vendor/autoload.php';
+
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+
 // Handle Delete Customer
 if (isset($_GET['delete']) && !empty($_GET['delete'])) {
     $customerId = $_GET['delete'];
@@ -84,6 +90,106 @@ if (isset($_GET['status']) && !empty($_GET['status']) && isset($_GET['id']) && !
     exit();
 }
 
+// Handle Excel Export
+if (isset($_GET['export']) && $_GET['export'] == 'excel') {
+    // Clear any previous output
+    ob_clean();
+
+    // Create new Spreadsheet object
+    $spreadsheet = new Spreadsheet();
+    $sheet = $spreadsheet->getActiveSheet();
+
+    // Set document properties
+    $spreadsheet->getProperties()
+        ->setCreator('Golden Dreams')
+        ->setLastModifiedBy('Golden Dreams')
+        ->setTitle('Customer Export')
+        ->setSubject('Customer Export')
+        ->setDescription('Customer export generated on ' . date('Y-m-d H:i:s'));
+
+    // Set headers
+    $headers = ['ID', 'Name', 'Contact', 'Email', 'Promoter', 'Status', 'Joined Date'];
+    $sheet->fromArray($headers, NULL, 'A1');
+
+    // Get filtered data
+    $exportQuery = "SELECT c.CustomerUniqueID, c.Name, c.Contact, c.Email, 
+                    CONCAT(p.PromoterUniqueID, ' - ', p.Name) as PromoterName,
+                    c.Status, c.JoinedDate
+                    FROM Customers c 
+                    LEFT JOIN Promoters p ON c.PromoterID = p.PromoterUniqueID" .
+        $whereClause .
+        " ORDER BY c.JoinedDate DESC";
+
+    $stmt = $conn->prepare($exportQuery);
+
+    // Bind parameters if they exist
+    if (!empty($params)) {
+        foreach ($params as $key => $value) {
+            $stmt->bindValue($key, $value);
+        }
+    }
+
+    $stmt->execute();
+    $exportData = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Add data to spreadsheet
+    $row = 2;
+    foreach ($exportData as $data) {
+        $sheet->setCellValue('A' . $row, $data['CustomerUniqueID']);
+        $sheet->setCellValue('B' . $row, $data['Name']);
+        $sheet->setCellValue('C' . $row, $data['Contact']);
+        $sheet->setCellValue('D' . $row, $data['Email']);
+        $sheet->setCellValue('E' . $row, $data['PromoterName'] ?? 'Direct');
+        $sheet->setCellValue('F' . $row, $data['Status']);
+        $sheet->setCellValue('G' . $row, $data['JoinedDate'] ? date('M d, Y', strtotime($data['JoinedDate'])) : '-');
+        $row++;
+    }
+
+    // Auto-size columns
+    foreach (range('A', 'G') as $col) {
+        $sheet->getColumnDimension($col)->setAutoSize(true);
+    }
+
+    // Style the header row
+    $headerStyle = [
+        'font' => [
+            'bold' => true,
+            'color' => ['rgb' => '000000']
+        ],
+        'fill' => [
+            'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+            'startColor' => ['rgb' => 'E0E0E0']
+        ],
+        'borders' => [
+            'allBorders' => [
+                'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN
+            ]
+        ],
+        'alignment' => [
+            'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER
+        ]
+    ];
+    $sheet->getStyle('A1:G1')->applyFromArray($headerStyle);
+
+    // Set filename with timestamp to avoid caching
+    $filename = 'customers_export_' . date('Y-m-d_His') . '.xlsx';
+
+    // Set headers for file download
+    header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    header('Content-Disposition: attachment;filename="' . $filename . '"');
+    header('Cache-Control: max-age=0');
+    header('Expires: Fri, 11 Nov 1980 05:00:00 GMT');
+    header('Last-Modified: ' . gmdate('D, d M Y H:i:s') . ' GMT');
+    header('Cache-Control: cache, must-revalidate');
+    header('Pragma: public');
+
+    // Create Excel writer and save file
+    $writer = new Xlsx($spreadsheet);
+    ob_end_clean(); // Clean output buffer before sending file
+    $writer->save('php://output');
+    exit;
+}
+
 // Pagination settings
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 $recordsPerPage = 10;
@@ -98,28 +204,29 @@ $referredBy = isset($_GET['referred_by']) ? $_GET['referred_by'] : '';
 // Build query conditions
 $conditions = [];
 $params = [];
+$paramCount = 0;
 
 if (!empty($search)) {
-    $conditions[] = "(c.Name LIKE ? OR c.Email LIKE ? OR c.Contact LIKE ? OR c.CustomerUniqueID LIKE ?)";
-    $params[] = "%$search%";
-    $params[] = "%$search%";
-    $params[] = "%$search%";
-    $params[] = "%$search%";
+    $conditions[] = "(c.Name LIKE :search1 OR c.Email LIKE :search2 OR c.Contact LIKE :search3 OR c.CustomerUniqueID LIKE :search4)";
+    $params[':search1'] = "%$search%";
+    $params[':search2'] = "%$search%";
+    $params[':search3'] = "%$search%";
+    $params[':search4'] = "%$search%";
 }
 
 if (!empty($status)) {
-    $conditions[] = "c.Status = ?";
-    $params[] = $status;
+    $conditions[] = "c.Status = :status";
+    $params[':status'] = $status;
 }
 
 if (!empty($promoterId)) {
-    $conditions[] = "c.PromoterID = ?";
-    $params[] = $promoterId;
+    $conditions[] = "c.PromoterID = :promoterId";
+    $params[':promoterId'] = $promoterId;
 }
 
 if (!empty($referredBy)) {
-    $conditions[] = "c.ReferredBy = ?";
-    $params[] = $referredBy;
+    $conditions[] = "c.ReferredBy = :referredBy";
+    $params[':referredBy'] = $referredBy;
 }
 
 $whereClause = !empty($conditions) ? " WHERE " . implode(" AND ", $conditions) : "";
@@ -132,24 +239,24 @@ $totalRecords = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
 $totalPages = ceil($totalRecords / $recordsPerPage);
 
 // Get customers with pagination
-$query = "SELECT c.CustomerID, c.CustomerUniqueID, c.Name, c.Contact, c.Email, 
-          c.Status, c.CreatedAt, c.ReferredBy, p.Name as PromoterName, p.PromoterUniqueID 
+$query = "SELECT c.*, CONCAT(p.PromoterUniqueID, ' - ', p.Name) as PromoterName 
           FROM Customers c 
-          LEFT JOIN Promoters p ON c.PromoterID = p.PromoterID"
-    . $whereClause .
-    " ORDER BY c.CreatedAt DESC LIMIT :offset, :limit";
+          LEFT JOIN Promoters p ON c.PromoterID = p.PromoterUniqueID" .
+    $whereClause .
+    " ORDER BY c.JoinedDate DESC LIMIT :offset, :limit";
 
 $stmt = $conn->prepare($query);
 
-// Bind search and filter parameters
+// Bind all parameters including search and filter parameters
 foreach ($params as $key => $value) {
-    $stmt->bindValue($key + 1, $value);
+    $stmt->bindValue($key, $value);
 }
 
-$stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
-$stmt->bindParam(':limit', $recordsPerPage, PDO::PARAM_INT);
-$stmt->execute();
+// Bind pagination parameters
+$stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+$stmt->bindValue(':limit', $recordsPerPage, PDO::PARAM_INT);
 
+$stmt->execute();
 $customers = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Get count of payments per customer
@@ -197,7 +304,7 @@ if (!empty($customers)) {
 }
 
 // Get all promoters for filter dropdown
-$promoterQuery = "SELECT PromoterID, Name, PromoterUniqueID FROM Promoters WHERE Status = 'Active' ORDER BY Name";
+$promoterQuery = "SELECT PromoterUniqueID, Name FROM Promoters WHERE Status = 'Active' ORDER BY Name";
 $stmt = $conn->prepare($promoterQuery);
 $stmt->execute();
 $promoters = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -217,7 +324,30 @@ include("../components/topbar.php");
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../assets/css/admin.css">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <style>
+        :root {
+            --ad_primary-color: #3a7bd5;
+            --ad_primary-hover: #2c60a9;
+            --ad_secondary-color: #00d2ff;
+            --ad_success-color: #2ecc71;
+            --ad_success-hover: #27ae60;
+            --warning-color: #f39c12;
+            --warning-hover: #d35400;
+            --danger-color: #e74c3c;
+            --danger-hover: #c0392b;
+            --text-dark: #2c3e50;
+            --text-medium: #34495e;
+            --text-light: #7f8c8d;
+            --bg-light: #f8f9fa;
+            --border-color: #e0e0e0;
+            --shadow-sm: 0 2px 5px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 10px rgba(0, 0, 0, 0.08);
+            --transition-speed: 0.3s;
+        }
+
         /* Page-specific styles */
         .customer-actions {
             display: flex;
@@ -603,6 +733,133 @@ include("../components/topbar.php");
                 white-space: nowrap;
             }
         }
+
+        /* Pagination Styles */
+        .pagination {
+            display: flex;
+            list-style: none;
+            padding: 0;
+            margin: 25px 0;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .pagination li {
+            margin: 0;
+        }
+
+        .pagination a,
+        .pagination span {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 36px;
+            height: 36px;
+            padding: 0 8px;
+            border-radius: 6px;
+            text-decoration: none;
+            color: var(--text-medium);
+            background: white;
+            border: 1px solid var(--border-color);
+            transition: all 0.2s ease;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .pagination a:hover {
+            background: var(--bg-light);
+            border-color: var(--ad_primary-color);
+            color: var(--ad_primary-color);
+            transform: translateY(-2px);
+            box-shadow: 0 3px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .pagination .active a {
+            background: var(--ad_primary-color);
+            color: white;
+            border-color: var(--ad_primary-color);
+            box-shadow: 0 2px 5px rgba(58, 123, 213, 0.3);
+        }
+
+        .pagination span {
+            color: var(--text-light);
+            background: var(--bg-light);
+        }
+
+        .pagination i {
+            font-size: 12px;
+        }
+
+        @media (max-width: 576px) {
+            .pagination {
+                gap: 4px;
+            }
+
+            .pagination a,
+            .pagination span {
+                min-width: 32px;
+                height: 32px;
+                padding: 0 6px;
+                font-size: 13px;
+            }
+        }
+
+        .export-btn {
+            margin-left: 10px;
+            display: inline-block;
+        }
+
+        .btn-success {
+            background-color: #28a745;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 4px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            transition: background-color 0.3s;
+        }
+
+        .btn-success:hover {
+            background-color: #218838;
+            color: white;
+        }
+
+        .select2-container {
+            min-width: 200px;
+        }
+
+        .select2-container--default .select2-selection--single {
+            height: 38px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            line-height: 36px;
+            padding-left: 12px;
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__arrow {
+            height: 36px;
+        }
+
+        .select2-dropdown {
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .select2-search--dropdown .select2-search__field {
+            padding: 8px;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+        }
+
+        .select2-container--default .select2-results__option--highlighted[aria-selected] {
+            background-color: var(--ad_primary-color);
+        }
     </style>
 </head>
 
@@ -613,6 +870,16 @@ include("../components/topbar.php");
             <a href="add.php" class="add-customer-btn">
                 <i class="fas fa-user-plus"></i> Add New Customer
             </a>
+            <div class="export-btn">
+                <a href="?export=excel<?php
+                                        echo !empty($search) ? '&search=' . urlencode($search) : '';
+                                        echo !empty($status) ? '&status_filter=' . urlencode($status) : '';
+                                        echo !empty($promoterId) ? '&promoter_id=' . urlencode($promoterId) : '';
+                                        echo !empty($referredBy) ? '&referred_by=' . urlencode($referredBy) : '';
+                                        ?>" class="btn btn-success">
+                    <i class="fas fa-file-excel"></i> Export to Excel
+                </a>
+            </div>
         </div>
 
         <?php if (isset($_SESSION['success_message'])): ?>
@@ -656,12 +923,12 @@ include("../components/topbar.php");
 
                     <div class="filter-group">
                         <label for="promoter_id">Promoter:</label>
-                        <select name="promoter_id" id="promoter_id" class="filter-select">
+                        <select name="promoter_id" id="promoter_id" class="filter-select promoter-select">
                             <option value="">All Promoters</option>
-                            <option value="NULL" <?php if ($promoterId === 'NULL') echo 'selected'; ?>>No Promoter</option>
                             <?php foreach ($promoters as $promoter): ?>
-                                <option value="<?php echo $promoter['PromoterID']; ?>" <?php if ($promoterId == $promoter['PromoterID']) echo 'selected'; ?>>
-                                    <?php echo htmlspecialchars($promoter['Name']); ?> (<?php echo $promoter['PromoterUniqueID']; ?>)
+                                <option value="<?php echo htmlspecialchars($promoter['PromoterUniqueID']); ?>"
+                                    <?php echo ($promoterId == $promoter['PromoterUniqueID']) ? 'selected' : ''; ?>>
+                                    <?php echo htmlspecialchars($promoter['PromoterUniqueID'] . ' - ' . $promoter['Name']); ?>
                                 </option>
                             <?php endforeach; ?>
                         </select>
@@ -707,7 +974,7 @@ include("../components/topbar.php");
                                         <td><?php echo !empty($customer['Email']) ? htmlspecialchars($customer['Email']) : '-'; ?></td>
                                         <td><?php echo !empty($customer['PromoterName']) ? htmlspecialchars($customer['PromoterName']) : 'Direct'; ?></td>
                                         <td><span class="customer-status status-<?php echo strtolower($customer['Status']); ?>"><?php echo $customer['Status']; ?></span></td>
-                                        <td><?php echo date('M d, Y', strtotime($customer['CreatedAt'])); ?></td>
+                                        <td><?php echo !empty($customer['JoinedDate']) ? date('M d, Y', strtotime($customer['JoinedDate'])) : '-'; ?></td>
                                         <td class="action-buttons-cell">
                                             <a href="view.php?id=<?php echo $customer['CustomerID']; ?>" class="action-button view-btn">
                                                 <i class="fas fa-eye"></i> View
@@ -731,39 +998,48 @@ include("../components/topbar.php");
                     <?php if ($totalPages > 1): ?>
                         <ul class="pagination">
                             <?php if ($page > 1): ?>
-                                <li><a href="?page=1<?php echo !empty($search) ? '&search=' . urlencode($search) : '';
+                                <li>
+                                    <a href="?page=1<?php echo !empty($search) ? '&search=' . urlencode($search) : '';
                                                     echo !empty($status) ? '&status_filter=' . urlencode($status) : '';
                                                     echo !empty($promoterId) ? '&promoter_id=' . urlencode($promoterId) : '';
-                                                    echo !empty($referredBy) ? '&referred_by=' . urlencode($referredBy) : ''; ?>"><i class="fas fa-angle-double-left"></i></a></li>
-                                <li><a href="?page=<?php echo $page - 1; ?><?php echo !empty($search) ? '&search=' . urlencode($search) : '';
+                                                    echo !empty($referredBy) ? '&referred_by=' . urlencode($referredBy) : ''; ?>" title="First Page">
+                                        <i class="fas fa-angle-double-left"></i>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="?page=<?php echo $page - 1; ?><?php echo !empty($search) ? '&search=' . urlencode($search) : '';
                                                                             echo !empty($status) ? '&status_filter=' . urlencode($status) : '';
                                                                             echo !empty($promoterId) ? '&promoter_id=' . urlencode($promoterId) : '';
-                                                                            echo !empty($referredBy) ? '&referred_by=' . urlencode($referredBy) : ''; ?>"><i class="fas fa-angle-left"></i></a></li>
+                                                                            echo !empty($referredBy) ? '&referred_by=' . urlencode($referredBy) : ''; ?>" title="Previous Page">
+                                        <i class="fas fa-angle-left"></i>
+                                    </a>
+                                </li>
                             <?php endif; ?>
 
                             <?php
-                            // Show limited page numbers with current page in the middle
                             $startPage = max(1, $page - 2);
                             $endPage = min($totalPages, $page + 2);
 
-                            // Always show first page button
                             if ($startPage > 1) {
-                                echo '<li><a href="?page=1' . (!empty($search) ? '&search=' . urlencode($search) : '') . (!empty($status) ? '&status_filter=' . urlencode($status) : '') . (!empty($promoterId) ? '&promoter_id=' . urlencode($promoterId) : '') . (!empty($referredBy) ? '&referred_by=' . urlencode($referredBy) : '') . '">1</a></li>';
+                                echo '<li><a href="?page=1' . (!empty($search) ? '&search=' . urlencode($search) : '') .
+                                    (!empty($status) ? '&status_filter=' . urlencode($status) : '') .
+                                    (!empty($promoterId) ? '&promoter_id=' . urlencode($promoterId) : '') .
+                                    (!empty($referredBy) ? '&referred_by=' . urlencode($referredBy) : '') . '">1</a></li>';
                                 if ($startPage > 2) {
                                     echo '<li><span>...</span></li>';
                                 }
                             }
 
-                            // Display page links
                             for ($i = $startPage; $i <= $endPage; $i++) {
-                                echo '<li class="' . ($page == $i ? 'active' : '') . '"><a href="?page=' . $i .
+                                echo '<li class="' . ($page == $i ? 'active' : '') . '">
+                                    <a href="?page=' . $i .
                                     (!empty($search) ? '&search=' . urlencode($search) : '') .
                                     (!empty($status) ? '&status_filter=' . urlencode($status) : '') .
                                     (!empty($promoterId) ? '&promoter_id=' . urlencode($promoterId) : '') .
-                                    (!empty($referredBy) ? '&referred_by=' . urlencode($referredBy) : '') . '">' . $i . '</a></li>';
+                                    (!empty($referredBy) ? '&referred_by=' . urlencode($referredBy) : '') . '">' . $i . '</a>
+                                    </li>';
                             }
 
-                            // Always show last page button
                             if ($endPage < $totalPages) {
                                 if ($endPage < $totalPages - 1) {
                                     echo '<li><span>...</span></li>';
@@ -777,14 +1053,22 @@ include("../components/topbar.php");
                             ?>
 
                             <?php if ($page < $totalPages): ?>
-                                <li><a href="?page=<?php echo $page + 1; ?><?php echo !empty($search) ? '&search=' . urlencode($search) : '';
+                                <li>
+                                    <a href="?page=<?php echo $page + 1; ?><?php echo !empty($search) ? '&search=' . urlencode($search) : '';
                                                                             echo !empty($status) ? '&status_filter=' . urlencode($status) : '';
                                                                             echo !empty($promoterId) ? '&promoter_id=' . urlencode($promoterId) : '';
-                                                                            echo !empty($referredBy) ? '&referred_by=' . urlencode($referredBy) : ''; ?>"><i class="fas fa-angle-right"></i></a></li>
-                                <li><a href="?page=<?php echo $totalPages; ?><?php echo !empty($search) ? '&search=' . urlencode($search) : '';
+                                                                            echo !empty($referredBy) ? '&referred_by=' . urlencode($referredBy) : ''; ?>" title="Next Page">
+                                        <i class="fas fa-angle-right"></i>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="?page=<?php echo $totalPages; ?><?php echo !empty($search) ? '&search=' . urlencode($search) : '';
                                                                                 echo !empty($status) ? '&status_filter=' . urlencode($status) : '';
                                                                                 echo !empty($promoterId) ? '&promoter_id=' . urlencode($promoterId) : '';
-                                                                                echo !empty($referredBy) ? '&referred_by=' . urlencode($referredBy) : ''; ?>"><i class="fas fa-angle-double-right"></i></a></li>
+                                                                                echo !empty($referredBy) ? '&referred_by=' . urlencode($referredBy) : ''; ?>" title="Last Page">
+                                        <i class="fas fa-angle-double-right"></i>
+                                    </a>
+                                </li>
                             <?php endif; ?>
                         </ul>
                     <?php endif; ?>
@@ -857,6 +1141,26 @@ include("../components/topbar.php");
                     }
                 }
             });
+        });
+
+        $(document).ready(function() {
+            // Initialize Select2 for promoter dropdown
+            $('.promoter-select').select2({
+                placeholder: 'Search promoter...',
+                allowClear: true,
+                width: '100%',
+                minimumInputLength: 1,
+                language: {
+                    inputTooShort: function() {
+                        return "Please enter 1 or more characters";
+                    }
+                }
+            });
+
+            // Preserve selected value after form submission
+            <?php if (!empty($promoterId)): ?>
+                $('.promoter-select').val('<?php echo $promoterId; ?>').trigger('change');
+            <?php endif; ?>
         });
     </script>
 </body>

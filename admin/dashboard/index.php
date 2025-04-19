@@ -1,5 +1,8 @@
 <?php
 session_start();
+require_once("../middleware/auth.php");
+verifyAuth();
+
 // Check if user is logged in, redirect if not
 // if (!isset($_SESSION['admin_id'])) {
 //     header("Location: ../login.php");
