@@ -175,7 +175,7 @@
             margin-left: var(--sidebar-width);
             transition: margin var(--transition-speed) ease, width var(--transition-speed) ease;
             min-height: 100vh;
-            /* padding: 20px; */
+            padding: 20px;
             width: calc(95% - var(--sidebar-width));
             position: absolute;
             right: a;

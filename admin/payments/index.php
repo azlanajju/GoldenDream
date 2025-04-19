@@ -1,9 +1,7 @@
 <?php
 session_start();
-if (!isset($_SESSION['admin_id'])) {
-    header("Location: ../login.php");
-    exit();
-}
+require_once("../middleware/auth.php");
+verifyAuth();
 
 $menuPath = "../";
 $currentPage = "payments";
@@ -1028,8 +1026,8 @@ include("../components/topbar.php");
     </div>
 
     <style>
-            .btn-clear-filter {
-            background: linear-gradient(135deg,white, black);
+        .btn-clear-filter {
+            background: linear-gradient(135deg, white, black);
             color: white;
             border: none;
             padding: 10px 18px;

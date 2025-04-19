@@ -98,28 +98,29 @@ $referredBy = isset($_GET['referred_by']) ? $_GET['referred_by'] : '';
 // Build query conditions
 $conditions = [];
 $params = [];
+$paramCount = 0;
 
 if (!empty($search)) {
-    $conditions[] = "(c.Name LIKE ? OR c.Email LIKE ? OR c.Contact LIKE ? OR c.CustomerUniqueID LIKE ?)";
-    $params[] = "%$search%";
-    $params[] = "%$search%";
-    $params[] = "%$search%";
-    $params[] = "%$search%";
+    $conditions[] = "(c.Name LIKE :search1 OR c.Email LIKE :search2 OR c.Contact LIKE :search3 OR c.CustomerUniqueID LIKE :search4)";
+    $params[':search1'] = "%$search%";
+    $params[':search2'] = "%$search%";
+    $params[':search3'] = "%$search%";
+    $params[':search4'] = "%$search%";
 }
 
 if (!empty($status)) {
-    $conditions[] = "c.Status = ?";
-    $params[] = $status;
+    $conditions[] = "c.Status = :status";
+    $params[':status'] = $status;
 }
 
 if (!empty($promoterId)) {
-    $conditions[] = "c.PromoterID = ?";
-    $params[] = $promoterId;
+    $conditions[] = "c.PromoterID = :promoterId";
+    $params[':promoterId'] = $promoterId;
 }
 
 if (!empty($referredBy)) {
-    $conditions[] = "c.ReferredBy = ?";
-    $params[] = $referredBy;
+    $conditions[] = "c.ReferredBy = :referredBy";
+    $params[':referredBy'] = $referredBy;
 }
 
 $whereClause = !empty($conditions) ? " WHERE " . implode(" AND ", $conditions) : "";
@@ -132,24 +133,24 @@ $totalRecords = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
 $totalPages = ceil($totalRecords / $recordsPerPage);
 
 // Get customers with pagination
-$query = "SELECT c.CustomerID, c.CustomerUniqueID, c.Name, c.Contact, c.Email, 
-          c.Status, c.CreatedAt, c.ReferredBy, p.Name as PromoterName, p.PromoterUniqueID 
+$query = "SELECT c.*, p.Name as PromoterName 
           FROM Customers c 
-          LEFT JOIN Promoters p ON c.PromoterID = p.PromoterID"
-    . $whereClause .
+          LEFT JOIN Promoters p ON c.PromoterID = p.PromoterID" .
+    $whereClause .
     " ORDER BY c.CreatedAt DESC LIMIT :offset, :limit";
 
 $stmt = $conn->prepare($query);
 
-// Bind search and filter parameters
+// Bind all parameters including search and filter parameters
 foreach ($params as $key => $value) {
-    $stmt->bindValue($key + 1, $value);
+    $stmt->bindValue($key, $value);
 }
 
-$stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
-$stmt->bindParam(':limit', $recordsPerPage, PDO::PARAM_INT);
-$stmt->execute();
+// Bind pagination parameters
+$stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+$stmt->bindValue(':limit', $recordsPerPage, PDO::PARAM_INT);
 
+$stmt->execute();
 $customers = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Get count of payments per customer
@@ -218,6 +219,26 @@ include("../components/topbar.php");
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../assets/css/admin.css">
     <style>
+        :root {
+            --ad_primary-color: #3a7bd5;
+            --ad_primary-hover: #2c60a9;
+            --ad_secondary-color: #00d2ff;
+            --ad_success-color: #2ecc71;
+            --ad_success-hover: #27ae60;
+            --warning-color: #f39c12;
+            --warning-hover: #d35400;
+            --danger-color: #e74c3c;
+            --danger-hover: #c0392b;
+            --text-dark: #2c3e50;
+            --text-medium: #34495e;
+            --text-light: #7f8c8d;
+            --bg-light: #f8f9fa;
+            --border-color: #e0e0e0;
+            --shadow-sm: 0 2px 5px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 10px rgba(0, 0, 0, 0.08);
+            --transition-speed: 0.3s;
+        }
+
         /* Page-specific styles */
         .customer-actions {
             display: flex;
@@ -603,6 +624,76 @@ include("../components/topbar.php");
                 white-space: nowrap;
             }
         }
+
+        /* Pagination Styles */
+        .pagination {
+            display: flex;
+            list-style: none;
+            padding: 0;
+            margin: 25px 0;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .pagination li {
+            margin: 0;
+        }
+
+        .pagination a,
+        .pagination span {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 36px;
+            height: 36px;
+            padding: 0 8px;
+            border-radius: 6px;
+            text-decoration: none;
+            color: var(--text-medium);
+            background: white;
+            border: 1px solid var(--border-color);
+            transition: all 0.2s ease;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .pagination a:hover {
+            background: var(--bg-light);
+            border-color: var(--ad_primary-color);
+            color: var(--ad_primary-color);
+            transform: translateY(-2px);
+            box-shadow: 0 3px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .pagination .active a {
+            background: var(--ad_primary-color);
+            color: white;
+            border-color: var(--ad_primary-color);
+            box-shadow: 0 2px 5px rgba(58, 123, 213, 0.3);
+        }
+
+        .pagination span {
+            color: var(--text-light);
+            background: var(--bg-light);
+        }
+
+        .pagination i {
+            font-size: 12px;
+        }
+
+        @media (max-width: 576px) {
+            .pagination {
+                gap: 4px;
+            }
+
+            .pagination a,
+            .pagination span {
+                min-width: 32px;
+                height: 32px;
+                padding: 0 6px;
+                font-size: 13px;
+            }
+        }
     </style>
 </head>
 
@@ -731,39 +822,48 @@ include("../components/topbar.php");
                     <?php if ($totalPages > 1): ?>
                         <ul class="pagination">
                             <?php if ($page > 1): ?>
-                                <li><a href="?page=1<?php echo !empty($search) ? '&search=' . urlencode($search) : '';
+                                <li>
+                                    <a href="?page=1<?php echo !empty($search) ? '&search=' . urlencode($search) : '';
                                                     echo !empty($status) ? '&status_filter=' . urlencode($status) : '';
                                                     echo !empty($promoterId) ? '&promoter_id=' . urlencode($promoterId) : '';
-                                                    echo !empty($referredBy) ? '&referred_by=' . urlencode($referredBy) : ''; ?>"><i class="fas fa-angle-double-left"></i></a></li>
-                                <li><a href="?page=<?php echo $page - 1; ?><?php echo !empty($search) ? '&search=' . urlencode($search) : '';
+                                                    echo !empty($referredBy) ? '&referred_by=' . urlencode($referredBy) : ''; ?>" title="First Page">
+                                        <i class="fas fa-angle-double-left"></i>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="?page=<?php echo $page - 1; ?><?php echo !empty($search) ? '&search=' . urlencode($search) : '';
                                                                             echo !empty($status) ? '&status_filter=' . urlencode($status) : '';
                                                                             echo !empty($promoterId) ? '&promoter_id=' . urlencode($promoterId) : '';
-                                                                            echo !empty($referredBy) ? '&referred_by=' . urlencode($referredBy) : ''; ?>"><i class="fas fa-angle-left"></i></a></li>
+                                                                            echo !empty($referredBy) ? '&referred_by=' . urlencode($referredBy) : ''; ?>" title="Previous Page">
+                                        <i class="fas fa-angle-left"></i>
+                                    </a>
+                                </li>
                             <?php endif; ?>
 
                             <?php
-                            // Show limited page numbers with current page in the middle
                             $startPage = max(1, $page - 2);
                             $endPage = min($totalPages, $page + 2);
 
-                            // Always show first page button
                             if ($startPage > 1) {
-                                echo '<li><a href="?page=1' . (!empty($search) ? '&search=' . urlencode($search) : '') . (!empty($status) ? '&status_filter=' . urlencode($status) : '') . (!empty($promoterId) ? '&promoter_id=' . urlencode($promoterId) : '') . (!empty($referredBy) ? '&referred_by=' . urlencode($referredBy) : '') . '">1</a></li>';
+                                echo '<li><a href="?page=1' . (!empty($search) ? '&search=' . urlencode($search) : '') .
+                                    (!empty($status) ? '&status_filter=' . urlencode($status) : '') .
+                                    (!empty($promoterId) ? '&promoter_id=' . urlencode($promoterId) : '') .
+                                    (!empty($referredBy) ? '&referred_by=' . urlencode($referredBy) : '') . '">1</a></li>';
                                 if ($startPage > 2) {
                                     echo '<li><span>...</span></li>';
                                 }
                             }
 
-                            // Display page links
                             for ($i = $startPage; $i <= $endPage; $i++) {
-                                echo '<li class="' . ($page == $i ? 'active' : '') . '"><a href="?page=' . $i .
+                                echo '<li class="' . ($page == $i ? 'active' : '') . '">
+                                    <a href="?page=' . $i .
                                     (!empty($search) ? '&search=' . urlencode($search) : '') .
                                     (!empty($status) ? '&status_filter=' . urlencode($status) : '') .
                                     (!empty($promoterId) ? '&promoter_id=' . urlencode($promoterId) : '') .
-                                    (!empty($referredBy) ? '&referred_by=' . urlencode($referredBy) : '') . '">' . $i . '</a></li>';
+                                    (!empty($referredBy) ? '&referred_by=' . urlencode($referredBy) : '') . '">' . $i . '</a>
+                                    </li>';
                             }
 
-                            // Always show last page button
                             if ($endPage < $totalPages) {
                                 if ($endPage < $totalPages - 1) {
                                     echo '<li><span>...</span></li>';
@@ -777,14 +877,22 @@ include("../components/topbar.php");
                             ?>
 
                             <?php if ($page < $totalPages): ?>
-                                <li><a href="?page=<?php echo $page + 1; ?><?php echo !empty($search) ? '&search=' . urlencode($search) : '';
+                                <li>
+                                    <a href="?page=<?php echo $page + 1; ?><?php echo !empty($search) ? '&search=' . urlencode($search) : '';
                                                                             echo !empty($status) ? '&status_filter=' . urlencode($status) : '';
                                                                             echo !empty($promoterId) ? '&promoter_id=' . urlencode($promoterId) : '';
-                                                                            echo !empty($referredBy) ? '&referred_by=' . urlencode($referredBy) : ''; ?>"><i class="fas fa-angle-right"></i></a></li>
-                                <li><a href="?page=<?php echo $totalPages; ?><?php echo !empty($search) ? '&search=' . urlencode($search) : '';
+                                                                            echo !empty($referredBy) ? '&referred_by=' . urlencode($referredBy) : ''; ?>" title="Next Page">
+                                        <i class="fas fa-angle-right"></i>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="?page=<?php echo $totalPages; ?><?php echo !empty($search) ? '&search=' . urlencode($search) : '';
                                                                                 echo !empty($status) ? '&status_filter=' . urlencode($status) : '';
                                                                                 echo !empty($promoterId) ? '&promoter_id=' . urlencode($promoterId) : '';
-                                                                                echo !empty($referredBy) ? '&referred_by=' . urlencode($referredBy) : ''; ?>"><i class="fas fa-angle-double-right"></i></a></li>
+                                                                                echo !empty($referredBy) ? '&referred_by=' . urlencode($referredBy) : ''; ?>" title="Last Page">
+                                        <i class="fas fa-angle-double-right"></i>
+                                    </a>
+                                </li>
                             <?php endif; ?>
                         </ul>
                     <?php endif; ?>
