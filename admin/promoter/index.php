@@ -1001,6 +1001,39 @@ include("../components/topbar.php");
             color: var(--ad_primary-color);
             font-weight: 500;
         }
+                .btn-info {
+            background: linear-gradient(135deg, #00b4db, #0083b0);
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-info:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
+        }
+
+        @media (max-width: 768px) {
+            .header-actions {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .header-actions a {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+        
     </style>
 </head>
 
@@ -1018,6 +1051,9 @@ include("../components/topbar.php");
                                         echo !empty($parentId) ? '&parent_id=' . urlencode($parentId) : '';
                                         ?>" class="btn btn-success">
                     <i class="fas fa-file-excel"></i> Export to Excel
+                </a>
+                                <a href="hierarchy.php" class="btn btn-info">
+                    <i class="fas fa-sitemap"></i> View Hierarchy
                 </a>
             </div>
         </div>
