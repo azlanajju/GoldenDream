@@ -38,7 +38,7 @@ CREATE TABLE Installments (
 -- 3. Promoters Table (Parent Table)
 CREATE TABLE Promoters (
     PromoterID INT AUTO_INCREMENT PRIMARY KEY,
-    PromoterID VARCHAR(50)  ,
+    PromoterUniqueID VARCHAR(50) UNIQUE ,
     CustomerID INT ,
     Name VARCHAR(255) ,
     Contact VARCHAR(50)  ,
@@ -51,7 +51,7 @@ CREATE TABLE Promoters (
     IFSCCode VARCHAR(20),
     BankName VARCHAR(255),
     PaymentCodeCounter INT DEFAULT 0,
-    ParentPromoterID  INT DEFAULT NULL,
+    ParentPromoterID  VARCHAR(50) DEFAULT NULL,
     TeamName VARCHAR(200),
     Status ENUM('Active', 'Inactive') DEFAULT 'Active',
     Commission  VARCHAR(200),
@@ -63,7 +63,7 @@ CREATE TABLE Promoters (
 -- 4. Customers Table (Child of Promoters)
 CREATE TABLE Customers (
     CustomerID INT AUTO_INCREMENT PRIMARY KEY,
-    CustomerID VARCHAR(50)  ,
+    CustomerUniqueID  VARCHAR(50)  ,
     Name VARCHAR(255) ,
     Contact VARCHAR(50)  ,
     Email VARCHAR(255) ,
@@ -77,14 +77,13 @@ CREATE TABLE Customers (
     BankAccountNumber VARCHAR(50),
     IFSCCode VARCHAR(20),
     BankName VARCHAR(255),
-    PromoterID INT,
+    PromoterID VARCHAR(50),
     ReferredBy  VARCHAR(50), 
     TeamName VARCHAR(200),
+    JoinedDate VARCHAR(50),
     Status ENUM('Active', 'Inactive', 'Suspended') DEFAULT 'Active',
     CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UpdatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (PromoterID) REFERENCES Promoters(PromoterID) ON DELETE SET NULL
-);
+    UpdatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP);
 
 -- 5. Payments Table (Child of Customers and Promoters)
 CREATE TABLE Payments (
@@ -232,7 +231,7 @@ CREATE TABLE Winners (
 
 CREATE TABLE Teams (
     TeamID INT AUTO_INCREMENT PRIMARY KEY,
-    TeamID VARCHAR(50)  ,
+    TeamUniqueID VARCHAR(50)  ,
     TeamName VARCHAR(255)  ,
     CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

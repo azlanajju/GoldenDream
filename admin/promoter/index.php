@@ -14,6 +14,116 @@ require_once("../../config/config.php");
 $database = new Database();
 $conn = $database->getConnection();
 
+// Add after database connection
+require '../../vendor/autoload.php';
+
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+
+// Add Excel Export handler after database connection and before pagination settings
+if (isset($_GET['export']) && $_GET['export'] == 'excel') {
+    // Clear any previous output
+    ob_clean();
+
+    // Create new Spreadsheet object
+    $spreadsheet = new Spreadsheet();
+    $sheet = $spreadsheet->getActiveSheet();
+
+    // Set document properties
+    $spreadsheet->getProperties()
+        ->setCreator('Golden Dreams')
+        ->setLastModifiedBy('Golden Dreams')
+        ->setTitle('Promoters Export')
+        ->setSubject('Promoters Export')
+        ->setDescription('Promoters export generated on ' . date('Y-m-d H:i:s'));
+
+    // Set headers
+    $headers = ['ID', 'Name', 'Contact', 'Email', 'Parent Promoter', 'Status', 'Payment Codes', 'Customers', 'Joined Date'];
+    $sheet->fromArray($headers, NULL, 'A1');
+
+    // Get filtered data for export
+    $exportQuery = "SELECT p.PromoterUniqueID, p.Name, p.Contact, p.Email, 
+                    parent.Name as ParentName, p.Status, p.PaymentCodeCounter,
+                    p.CreatedAt, 
+                    (SELECT COUNT(*) FROM Customers WHERE PromoterID = p.PromoterUniqueID) as CustomerCount
+                    FROM Promoters p 
+                    LEFT JOIN Promoters parent ON p.ParentPromoterID = parent.PromoterUniqueID"
+        . $whereClause .
+        " ORDER BY p.CreatedAt DESC";
+
+    $stmt = $conn->prepare($exportQuery);
+
+    // Bind parameters if they exist
+    if (!empty($params)) {
+        foreach ($params as $key => $value) {
+            $stmt->bindValue($key, $value);
+        }
+    }
+
+    $stmt->execute();
+    $exportData = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Add data to spreadsheet
+    $row = 2;
+    foreach ($exportData as $data) {
+        $sheet->setCellValue('A' . $row, $data['PromoterUniqueID']);
+        $sheet->setCellValue('B' . $row, $data['Name']);
+        $sheet->setCellValue('C' . $row, $data['Contact']);
+        $sheet->setCellValue('D' . $row, $data['Email']);
+        $sheet->setCellValue('E' . $row, $data['ParentName'] ?? 'None');
+        $sheet->setCellValue('F' . $row, $data['Status']);
+        $sheet->setCellValue('G' . $row, $data['PaymentCodeCounter']);
+        $sheet->setCellValue('H' . $row, $data['CustomerCount']);
+        $sheet->setCellValue('I' . $row, date('M d, Y', strtotime($data['CreatedAt'])));
+        $row++;
+    }
+
+    // Auto-size columns
+    foreach (range('A', 'I') as $col) {
+        $sheet->getColumnDimension($col)->setAutoSize(true);
+    }
+
+    // Style the header row
+    $headerStyle = [
+        'font' => [
+            'bold' => true,
+            'color' => ['rgb' => '000000']
+        ],
+        'fill' => [
+            'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+            'startColor' => ['rgb' => 'E0E0E0']
+        ],
+        'borders' => [
+            'allBorders' => [
+                'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN
+            ]
+        ],
+        'alignment' => [
+            'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER
+        ]
+    ];
+    $sheet->getStyle('A1:I1')->applyFromArray($headerStyle);
+
+    // Set filename with timestamp to avoid caching
+    $filename = 'promoters_export_' . date('Y-m-d_His') . '.xlsx';
+
+    // Set headers for file download
+    header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    header('Content-Disposition: attachment;filename="' . $filename . '"');
+    header('Cache-Control: max-age=0');
+    header('Expires: Fri, 11 Nov 1980 05:00:00 GMT');
+    header('Last-Modified: ' . gmdate('D, d M Y H:i:s') . ' GMT');
+    header('Cache-Control: cache, must-revalidate');
+    header('Pragma: public');
+
+    // Create Excel writer and save file
+    $writer = new Xlsx($spreadsheet);
+    ob_end_clean();
+    $writer->save('php://output');
+    exit;
+}
+
 // Handle Delete Promoter
 if (isset($_GET['delete']) && !empty($_GET['delete'])) {
     $promoterId = $_GET['delete'];
@@ -117,9 +227,11 @@ $totalPages = ceil($totalRecords / $recordsPerPage);
 
 // Get promoters with pagination
 $query = "SELECT p.PromoterID, p.PromoterUniqueID, p.Name, p.Contact, p.Email, 
-          p.Status, p.CreatedAt, p.PaymentCodeCounter, parent.Name as ParentName 
+          p.Status, p.CreatedAt, p.PaymentCodeCounter, parent.Name as ParentName,
+          parent.PromoterUniqueID as ParentPromoterID,
+          (SELECT COUNT(*) FROM Customers WHERE PromoterID = p.PromoterUniqueID) as CustomerCount
           FROM Promoters p 
-          LEFT JOIN Promoters parent ON p.ParentPromoterID = parent.PromoterID"
+          LEFT JOIN Promoters parent ON p.ParentPromoterID = parent.PromoterUniqueID"
     . $whereClause .
     " ORDER BY p.CreatedAt DESC LIMIT :offset, :limit";
 
@@ -179,6 +291,7 @@ include("../components/topbar.php");
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../assets/css/admin.css">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <style>
         /* Promoter Management Styles with pr_ prefix variables */
         :root {
@@ -803,6 +916,91 @@ include("../components/topbar.php");
                 height: 32px;
             }
         }
+
+        .select2-container {
+            min-width: 200px;
+        }
+
+        .select2-container--default .select2-selection--single {
+            height: 38px;
+            border: 1px solid var(--pr_border-color);
+            border-radius: 6px;
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            line-height: 36px;
+            padding-left: 12px;
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__arrow {
+            height: 36px;
+        }
+
+        .select2-dropdown {
+            border: 1px solid var(--pr_border-color);
+            border-radius: 6px;
+            box-shadow: var(--pr_shadow-sm);
+        }
+
+        .select2-search--dropdown .select2-search__field {
+            padding: 8px;
+            border: 1px solid var(--pr_border-color);
+            border-radius: 4px;
+        }
+
+        .select2-container--default .select2-results__option--highlighted[aria-selected] {
+            background-color: var(--pr_primary);
+        }
+
+        .export-btn {
+            margin-left: 10px;
+            display: inline-block;
+        }
+
+        .btn-success {
+            background-color: #28a745;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 4px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            transition: background-color 0.3s;
+        }
+
+        .btn-success:hover {
+            background-color: #218838;
+            color: white;
+        }
+
+        .parent-promoter {
+            color: var(--ad_primary-color);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .parent-promoter:hover {
+            text-decoration: underline;
+        }
+
+        .no-parent {
+            color: var(--text-light);
+            font-style: italic;
+        }
+
+        .customer-count {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 8px;
+            background: rgba(58, 123, 213, 0.1);
+            border-radius: 4px;
+            color: var(--ad_primary-color);
+            font-weight: 500;
+        }
     </style>
 </head>
 
@@ -813,6 +1011,15 @@ include("../components/topbar.php");
             <a href="add.php" class="add-promoter-btn">
                 <i class="fas fa-user-plus"></i> Add New Promoter
             </a>
+            <div class="export-btn">
+                <a href="?export=excel<?php
+                                        echo !empty($search) ? '&search=' . urlencode($search) : '';
+                                        echo !empty($status) ? '&status_filter=' . urlencode($status) : '';
+                                        echo !empty($parentId) ? '&parent_id=' . urlencode($parentId) : '';
+                                        ?>" class="btn btn-success">
+                    <i class="fas fa-file-excel"></i> Export to Excel
+                </a>
+            </div>
         </div>
 
         <?php if (isset($_SESSION['success_message'])): ?>
@@ -856,12 +1063,12 @@ include("../components/topbar.php");
 
                     <div class="filter-group">
                         <label for="parent_id">Parent Promoter:</label>
-                        <select name="parent_id" id="parent_id" class="filter-select">
-                            <option value="">All Promoters</option>
-                            <option value="NULL" <?php if ($parentId === 'NULL') echo 'selected'; ?>>No Parent</option>
+                        <select name="parent_id" id="parent_id" class="filter-select parent-select">
+                            <option value="">All Parent Promoters</option>
                             <?php foreach ($parentPromoters as $parent): ?>
-                                <option value="<?php echo $parent['PromoterID']; ?>" <?php if ($parentId == $parent['PromoterID']) echo 'selected'; ?>>
-                                    <?php echo htmlspecialchars($parent['Name']); ?> (<?php echo $parent['PromoterUniqueID']; ?>)
+                                <option value="<?php echo htmlspecialchars($parent['PromoterUniqueID']); ?>"
+                                    <?php echo ($parentId == $parent['PromoterUniqueID']) ? 'selected' : ''; ?>>
+                                    <?php echo htmlspecialchars($parent['PromoterUniqueID'] . ' - ' . $parent['Name']); ?>
                                 </option>
                             <?php endforeach; ?>
                         </select>
@@ -887,10 +1094,11 @@ include("../components/topbar.php");
                                     <th>Name</th>
                                     <th>Contact</th>
                                     <th>Email</th>
+                                    <th>Parent Promoter</th>
                                     <th>Status</th>
                                     <th>Codes</th>
                                     <th>Customers</th>
-                                    <th>Created</th>
+                                    <th>Joined</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
@@ -909,6 +1117,17 @@ include("../components/topbar.php");
                                         <td><?php echo htmlspecialchars($promoter['Contact']); ?></td>
                                         <td><?php echo htmlspecialchars($promoter['Email'] ?? 'N/A'); ?></td>
                                         <td>
+                                            <?php if ($promoter['ParentName']): ?>
+                                                <a href="?parent_id=<?php echo htmlspecialchars($promoter['ParentPromoterID']); ?>"
+                                                    class="parent-promoter" title="Filter by this parent promoter">
+                                                    <i class="fas fa-user-friends"></i>
+                                                    <?php echo htmlspecialchars($promoter['ParentPromoterID'] . ' - ' . $promoter['ParentName']); ?>
+                                                </a>
+                                            <?php else: ?>
+                                                <span class="no-parent">No Parent</span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td>
                                             <span class="status-badge status-<?php echo strtolower($promoter['Status']); ?>">
                                                 <?php echo $promoter['Status']; ?>
                                             </span>
@@ -916,7 +1135,8 @@ include("../components/topbar.php");
                                         <td><span class="payment-code-counter"><?php echo $promoter['PaymentCodeCounter']; ?></span></td>
                                         <td>
                                             <span class="customer-count">
-                                                <?php echo isset($promoterCustomerCounts[$promoter['PromoterID']]) ? $promoterCustomerCounts[$promoter['PromoterID']] : 0; ?>
+                                                <i class="fas fa-users"></i>
+                                                <?php echo $promoter['CustomerCount']; ?>
                                             </span>
                                         </td>
                                         <td><?php echo date('M d, Y', strtotime($promoter['CreatedAt'])); ?></td>
@@ -1059,6 +1279,26 @@ include("../components/topbar.php");
                     }, 500);
                 });
             }, 3000);
+        });
+
+        $(document).ready(function() {
+            // Initialize Select2 for parent promoter dropdown
+            $('.parent-select').select2({
+                placeholder: 'Search parent promoter...',
+                allowClear: true,
+                width: '100%',
+                minimumInputLength: 1,
+                language: {
+                    inputTooShort: function() {
+                        return "Please enter 1 or more characters";
+                    }
+                }
+            });
+
+            // Preserve selected value after form submission
+            <?php if (!empty($parentId)): ?>
+                $('.parent-select').val('<?php echo $parentId; ?>').trigger('change');
+            <?php endif; ?>
         });
     </script>
 </body>
