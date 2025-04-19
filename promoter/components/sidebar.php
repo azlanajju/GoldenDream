@@ -270,6 +270,14 @@
                 <span class="link-text">Add Customer</span>
             </a>
         </li>
+        
+        <div class="section-divider"><span>Promoter Management</span></div>
+        <li class="<?php echo ($currentPage == 'add-promoter') ? 'active' : ''; ?>">
+            <a href="<?php echo $menuPath; ?>childPromoter/" data-title="Add Promoter">
+            <i class="fas fa-user-friends"></i>
+                <span class="link-text">My Promoters</span>
+            </a>
+        </li>
 
         <div class="section-divider"><span>Schemes & Payments</span></div>
 
@@ -285,12 +293,12 @@
                 <span class="link-text">Payments</span>
             </a>
         </li>
-        <li class="<?php echo ($currentPage == 'payment-codes') ? 'active' : ''; ?>">
+        <!-- <li class="<?php echo ($currentPage == 'payment-codes') ? 'active' : ''; ?>">
             <a href="<?php echo $menuPath; ?>payment-codes" data-title="Payment Codes">
                 <i class="fas fa-qrcode"></i>
                 <span class="link-text">Payment Codes</span>
             </a>
-        </li>
+        </li> -->
 
         <div class="section-divider"><span>Earnings</span></div>
 

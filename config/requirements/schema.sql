@@ -38,12 +38,12 @@ CREATE TABLE Installments (
 -- 3. Promoters Table (Parent Table)
 CREATE TABLE Promoters (
     PromoterID INT AUTO_INCREMENT PRIMARY KEY,
-    PromoterUniqueID VARCHAR(50) UNIQUE NOT NULL,
+    PromoterUniqueID VARCHAR(50) UNIQUE ,
     CustomerID INT UNIQUE,
-    Name VARCHAR(255) NOT NULL,
-    Contact VARCHAR(50) UNIQUE NOT NULL,
+    Name VARCHAR(255) ,
+    Contact VARCHAR(50) UNIQUE ,
     Email VARCHAR(255) UNIQUE,
-    PasswordHash VARCHAR(255) NOT NULL,
+    PasswordHash VARCHAR(255) DEFAULT "$2y$10$f8RpDnV887jmqZKOTEm/oesy7nKRboD8HxH5yQMF0xdLO0aTGLnZm",
     Address TEXT,
     ProfileImageURL VARCHAR(255),
     BankAccountName VARCHAR(255),
@@ -51,11 +51,10 @@ CREATE TABLE Promoters (
     IFSCCode VARCHAR(20),
     BankName VARCHAR(255),
     PaymentCodeCounter INT DEFAULT 0,
-    Gender ENUM('Male', 'Female', 'Other') DEFAULT NULL,
-    DateOfBirth DATE DEFAULT NULL,
     ParentPromoterID  INT DEFAULT NULL,
-    TeamID VARCHAR(20),
+    TeamName VARCHAR(200),
     Status ENUM('Active', 'Inactive') DEFAULT 'Active',
+    Commission  VARCHAR(200),
     CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UpdatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
