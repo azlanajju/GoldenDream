@@ -77,7 +77,7 @@
     }
 
     .breadcrumb-item a {
-        color: var(--text-light);
+        color: var(--text-dark);
         text-decoration: none;
     }
 

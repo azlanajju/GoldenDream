@@ -147,22 +147,50 @@ $currentPage = 'profile';
             --text-secondary: #7f8c8d;
             --bg-light: #f8f9fa;
             --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            --Topprimary-color: #3a7bd5;
+            --Topsecondary-color: #00d2ff;
+            --Toptext-dark: #2c3e50;
+            --Toptext-light: #7f8c8d;
+            --topborder-color: #e5e9f2;
+            --Topbg-light: #f8f9fa;
+            --shadow-sm: 0 2px 5px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+            --transition-speed: 0.3s;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
         }
 
         body {
             background-color: #f5f7fa;
+            font-family: 'Poppins', sans-serif;
+            color: var(--Toptext-dark);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        .content-wrapper {
+            width: 100%;
+            min-height: 100vh;
+            padding: 20px;
+            margin-left: var(--sidebar-width);
+            transition: margin-left 0.3s ease;
         }
 
         .profile-container {
-            max-width: 1100px;
-            margin: 40px auto;
+            max-width: 1200px;
+            margin: 20px auto;
             display: grid;
             grid-template-columns: 300px 1fr;
             grid-template-areas: 
                 "sidebar main"
                 "quick-actions main";
-            gap: 30px;
-            padding: 0 20px;
+            gap: 25px;
+            padding: 0 15px;
         }
 
         .profile-sidebar {
@@ -173,12 +201,13 @@ $currentPage = 'profile';
             text-align: center;
             height: fit-content;
             box-shadow: var(--card-shadow);
+            animation: slideIn 0.5s ease;
         }
 
         .profile-image-container {
             position: relative;
-            width: 180px;
-            height: 180px;
+            width: 160px;
+            height: 160px;
             margin: 0 auto 20px;
         }
 
@@ -194,8 +223,8 @@ $currentPage = 'profile';
 
         .image-upload-label {
             position: absolute;
-            bottom: 10px;
-            right: 10px;
+            bottom: 5px;
+            right: 5px;
             background: var(--primary-color);
             width: 40px;
             height: 40px;
@@ -206,11 +235,19 @@ $currentPage = 'profile';
             cursor: pointer;
             transition: all 0.3s ease;
             box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+            color: white;
         }
 
         .image-upload-label:hover {
             transform: scale(1.1);
             background: var(--secondary-color);
+        }
+
+        .profile-sidebar h2 {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            color: var(--Toptext-dark);
+            font-weight: 600;
         }
 
         .profile-status {
@@ -227,23 +264,68 @@ $currentPage = 'profile';
         }
 
         .profile-id {
-            color: var(--text-secondary);
+            color: var(--Toptext-light);
             font-size: 14px;
             margin: 10px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+
+        .quick-actions {
+            grid-area: quick-actions;
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: var(--card-shadow);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            animation: slideIn 0.5s ease 0.2s backwards;
+        }
+
+        .action-btn {
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: var(--Topbg-light);
+            border: 2px solid var(--topborder-color);
+            border-radius: 12px;
+            color: var(--Toptext-dark);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all var(--transition-speed) ease;
+            width: 100%;
+        }
+
+        .action-btn:hover {
+            background: rgba(58, 123, 213, 0.1);
+            border-color: var(--Topprimary-color);
+            transform: translateY(-2px);
+            color: var(--Topprimary-color);
+        }
+
+        .action-btn i {
+            font-size: 20px;
+            color: var(--Topprimary-color);
+            width: 24px;
+            text-align: center;
         }
 
         .main-content {
             grid-area: main;
             background: white;
             border-radius: 20px;
-            padding: 40px;
+            padding: 35px;
             box-shadow: var(--card-shadow);
-            grid-row: span 2;
+            animation: slideIn 0.5s ease 0.1s backwards;
         }
 
         .section-title {
-            color: var(--text-primary);
-            font-size: 22px;
+            color: var(--Toptext-dark);
+            font-size: 1.4rem;
             font-weight: 600;
             margin-bottom: 30px;
             display: flex;
@@ -251,6 +333,10 @@ $currentPage = 'profile';
             gap: 12px;
             padding-bottom: 15px;
             border-bottom: 2px solid var(--primary-light);
+        }
+
+        .section-title i {
+            color: var(--primary-color);
         }
 
         .form-row {
@@ -262,10 +348,11 @@ $currentPage = 'profile';
 
         .form-group {
             position: relative;
+            margin-bottom: 5px;
         }
 
         .form-group label {
-            color: var(--text-secondary);
+            color: var(--Toptext-light);
             font-size: 13px;
             font-weight: 500;
             margin-bottom: 8px;
@@ -277,11 +364,13 @@ $currentPage = 'profile';
         .form-group input {
             width: 100%;
             padding: 12px 15px;
-            border: 2px solid var(--border-color);
+            border: 2px solid var(--topborder-color);
             border-radius: 12px;
             font-size: 15px;
             transition: all 0.3s ease;
-            background: var(--bg-light);
+            background: var(--Topbg-light);
+            padding-right: 40px;
+            font-family: 'Poppins', sans-serif;
         }
 
         .form-group input:focus {
@@ -295,11 +384,11 @@ $currentPage = 'profile';
             position: absolute;
             right: 15px;
             top: 40px;
-            color: var(--text-secondary);
+            color: var(--Toptext-light);
         }
 
         .btn-submit {
-            background: var(--primary-color);
+            background: var(--Topprimary-color);
             color: white;
             padding: 15px 35px;
             border: none;
@@ -312,13 +401,14 @@ $currentPage = 'profile';
             align-items: center;
             gap: 10px;
             margin-top: 20px;
-            box-shadow: 0 5px 15px rgba(13, 106, 80, 0.2);
+            box-shadow: var(--shadow-md);
+            font-family: 'Poppins', sans-serif;
         }
 
         .btn-submit:hover {
-            background: var(--secondary-color);
+            background: var(--Topsecondary-color);
             transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(44, 62, 80, 0.3);
+            box-shadow: 0 8px 20px rgba(0, 210, 255, 0.3);
         }
 
         .alert {
@@ -330,17 +420,6 @@ $currentPage = 'profile';
             gap: 12px;
             animation: slideIn 0.3s ease;
             transition: opacity 0.3s ease;
-        }
-
-        @keyframes slideIn {
-            from {
-                transform: translateY(-10px);
-                opacity: 0;
-            }
-            to {
-                transform: translateY(0);
-                opacity: 1;
-            }
         }
 
         .alert-success {
@@ -355,64 +434,6 @@ $currentPage = 'profile';
             border: 2px solid rgba(231, 76, 60, 0.2);
         }
 
-        .section-card {
-            background: white;
-            border-radius: 15px;
-            padding: 30px;
-            margin-bottom: 30px;
-        }
-
-        @media (max-width: 768px) {
-            .profile-container {
-                grid-template-columns: 1fr;
-                grid-template-areas: 
-                    "sidebar"
-                    "quick-actions"
-                    "main";
-            }
-            
-            .form-row {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        .quick-actions {
-            grid-area: quick-actions;
-            background: white;
-            border-radius: 20px;
-            padding: 20px;
-            box-shadow: var(--card-shadow);
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 15px;
-        }
-
-        .action-btn {
-            padding: 15px;
-            width: 90%;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            background: var(--bg-light);
-            border: 2px solid var(--border-color);
-            border-radius: 12px;
-            color: var(--text-primary);
-            text-decoration: none;
-            font-weight: 500;
-            transition: all 0.3s ease;
-        }
-
-        .action-btn:hover {
-            background: var(--primary-light);
-            border-color: var(--primary-color);
-            transform: translateY(-2px);
-        }
-
-        .action-btn i {
-            font-size: 20px;
-            color: var(--primary-color);
-        }
-
         .kyc-status {
             display: inline-flex;
             align-items: center;
@@ -421,6 +442,7 @@ $currentPage = 'profile';
             border-radius: 20px;
             font-size: 12px;
             font-weight: 500;
+            margin-left: auto;
         }
 
         .kyc-pending {
@@ -436,6 +458,81 @@ $currentPage = 'profile';
         .kyc-rejected {
             background: rgba(231, 76, 60, 0.1);
             color: #e74c3c;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 1200px) {
+            .profile-container {
+                grid-template-columns: 280px 1fr;
+                gap: 20px;
+            }
+        }
+
+        @media (max-width: 992px) {
+            .content-wrapper {
+                margin-left: 0;
+                padding: 15px;
+            }
+
+            .profile-container {
+                grid-template-columns: 1fr;
+                grid-template-areas: 
+                    "sidebar"
+                    "quick-actions"
+                    "main";
+                padding: 0 10px;
+            }
+
+            .profile-sidebar {
+                padding: 25px;
+            }
+
+            .main-content {
+                padding: 25px;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .profile-container {
+                margin: 10px auto;
+            }
+
+            .profile-image-container {
+                width: 140px;
+                height: 140px;
+            }
+
+            .section-title {
+                font-size: 1.2rem;
+            }
+
+            .form-group input {
+                font-size: 14px;
+            }
+
+            .btn-submit {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .action-btn {
+                padding: 12px 15px;
+            }
         }
     </style>
 </head>
